@@ -34,7 +34,7 @@ func Init() {
 		task_id INTEGER PRIMARY KEY AUTOINCREMENT,
 		description TEXT NOT NULL,
 		project_id INTEGER NOT NULL,
-		order INTEGER NOT NULL,
+		sort INTEGER NOT NULL,
 		is_completed INTEGER NOT NULL,
 		is_failed INTEGER NOT NULL,
 		FOREIGN KEY(project_id) REFERENCES projects(project_id)
@@ -64,7 +64,7 @@ func InsertProject(p Project) error {
 		INSERT INTO tasks(
 			description,
 			project_id,
-			order,
+			sort,
 			is_completed,
 			is_failed)
 		VALUES (?, ?, ?, ?, ?)
