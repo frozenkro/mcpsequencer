@@ -85,7 +85,7 @@ func isHTTP() (bool, int) {
 		if v == "--http" {
 			fmt.Printf("Running in http transport mode\n")
 
-			if len(os.Args) >= i+1 {
+			if i < len(os.Args)-1 {
 				port, err := strconv.Atoi(os.Args[i+1])
 				if err != nil {
 					fmt.Printf("Error parsing port, setting port to %v", DefaultPort)
@@ -94,6 +94,7 @@ func isHTTP() (bool, int) {
 
 				return true, port
 			}
+			return true, DefaultPort
 		}
 	}
 
