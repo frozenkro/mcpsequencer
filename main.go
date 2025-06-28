@@ -3,11 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
 
 	"github.com/frozenkro/mcpsequencer/db"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
+
+var DefaultPort int = 8080
 
 func createProjectHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	name, err := request.RequireString("ProjectName")
@@ -56,8 +60,42 @@ func main() {
 	// Add tool handler
 	s.AddTool(tool, createProjectHandler)
 
-	// Start the stdio server
-	if err := server.ServeStdio(s); err != nil {
-		fmt.Printf("Server error: %v\n", err)
+	if http, port := isHTTP(); http {
+		fmt.Printf("Starting HTTP Server...")
+
+		httpServer := server.NewStreamableHTTPServer(s)
+
+		portStr := fmt.Sprintf(":%v", port)
+		if err := httpServer.Start(portStr); err != nil {
+			fmt.Printf("HTTP Server error: %v\n", err)
+		}
+
+	} else {
+		fmt.Printf("Starting Stdio Server...")
+
+		if err := server.ServeStdio(s); err != nil {
+			fmt.Printf("Stdio Server error: %v\n", err)
+		}
 	}
+}
+
+func isHTTP() (bool, int) {
+
+	for i, v := range os.Args {
+		if v == "--http" {
+			fmt.Printf("Running in http transport mode\n")
+
+			if len(os.Args) >= i+1 {
+				port, err := strconv.Atoi(os.Args[i+1])
+				if err != nil {
+					fmt.Printf("Error parsing port, setting port to %v", DefaultPort)
+					return true, DefaultPort
+				}
+
+				return true, port
+			}
+		}
+	}
+
+	return false, 0
 }
