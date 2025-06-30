@@ -60,6 +60,9 @@ func main() {
 	// Add tool handler
 	s.AddTool(tool, createProjectHandler)
 
+	// Set up DB
+	db.Init()
+
 	if http, port := isHTTP(); http {
 		fmt.Printf("Starting HTTP Server...")
 
