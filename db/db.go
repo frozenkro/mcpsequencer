@@ -37,6 +37,7 @@ func Init() {
 		sort INTEGER NOT NULL,
 		is_completed INTEGER NOT NULL,
 		is_failed INTEGER NOT NULL,
+		notes TEXT NULL,
 		FOREIGN KEY(project_id) REFERENCES projects(project_id)
 	);
 	`
@@ -66,7 +67,8 @@ func InsertProject(p Project) error {
 			project_id,
 			sort,
 			is_completed,
-			is_failed)
+			is_failed,
+		  notes)
 		VALUES (?, ?, ?, ?, ?)
 	`
 	pid, err := result.LastInsertId()
@@ -78,6 +80,7 @@ func InsertProject(p Project) error {
 			i+1,
 			0,
 			0,
+			"",
 		)
 
 		if err != nil {
@@ -88,7 +91,7 @@ func InsertProject(p Project) error {
 	return err
 }
 
-func GetProjects() ([]Project, error) {
+func GetAllProjects() ([]Project, error) {
 	rows, err := db.Query("SELECT name, tasks FROM projects")
 	if err != nil {
 		return nil, err
