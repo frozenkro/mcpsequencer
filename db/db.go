@@ -15,11 +15,11 @@ type Project struct {
 
 const dbFileName = "projects.db"
 
-var db *sql.DB
+var DB *sql.DB
 
 func Init() {
 	var err error
-	db, err = sql.Open("sqlite3", dbFileName)
+	DB, err = sql.Open("sqlite3", dbFileName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -41,19 +41,19 @@ func Init() {
 		FOREIGN KEY(project_id) REFERENCES projects(project_id)
 	);
 	`
-	_, err = db.Exec(createProjectsTableQuery)
+	_, err = DB.Exec(createProjectsTableQuery)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	_, err = db.Exec(createTasksTableQuery)
+	_, err = DB.Exec(createTasksTableQuery)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
 func InsertProject(p Project) error {
-	result, err := db.Exec(
+	result, err := DB.Exec(
 		"INSERT INTO projects(name) VALUES (?)",
 		p.Name,
 	)
@@ -73,7 +73,7 @@ func InsertProject(p Project) error {
 	`
 	pid, err := result.LastInsertId()
 	for i, v := range p.Tasks {
-		_, err := db.Exec(
+		_, err := DB.Exec(
 			taskSql,
 			v,
 			pid,
@@ -92,7 +92,7 @@ func InsertProject(p Project) error {
 }
 
 func GetAllProjects() ([]Project, error) {
-	rows, err := db.Query("SELECT name, tasks FROM projects")
+	rows, err := DB.Query("SELECT name, tasks FROM projects")
 	if err != nil {
 		return nil, err
 	}
