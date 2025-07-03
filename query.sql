@@ -26,55 +26,49 @@ WHERE project_id = ?;
 -- Tasks CRUD Operations
 
 -- name: CreateTask :one
-INSERT INTO tasks (description, project_id, sort, is_completed, is_failed, notes)
+INSERT INTO tasks (description, project_id, sort, is_completed, is_in_progress, notes)
 VALUES (?, ?, ?, ?, ?, ?)
-RETURNING task_id, description, project_id, sort, is_completed, is_failed, notes;
+RETURNING task_id, description, project_id, sort, is_completed, is_in_progress, notes;
 
 -- name: GetTask :one
-SELECT task_id, description, project_id, sort, is_completed, is_failed, notes
+SELECT task_id, description, project_id, sort, is_completed, is_in_progress, notes
 FROM tasks
 WHERE task_id = ?;
 
 -- name: GetAllTasks :many
-SELECT task_id, description, project_id, sort, is_completed, is_failed, notes
+SELECT task_id, description, project_id, sort, is_completed, is_in_progress, notes
 FROM tasks
 ORDER BY sort;
 
 -- name: GetTasksByProject :many
-SELECT task_id, description, project_id, sort, is_completed, is_failed, notes
+SELECT task_id, description, project_id, sort, is_completed, is_in_progress, notes
 FROM tasks
 WHERE project_id = ?
 ORDER BY sort;
 
 -- name: GetCompletedTasks :many
-SELECT task_id, description, project_id, sort, is_completed, is_failed, notes
+SELECT task_id, description, project_id, sort, is_completed, is_in_progress, notes
 FROM tasks
 WHERE is_completed = 1
 ORDER BY sort;
 
--- name: GetFailedTasks :many
-SELECT task_id, description, project_id, sort, is_completed, is_failed, notes
-FROM tasks
-WHERE is_failed = 1
-ORDER BY sort;
-
 -- name: GetPendingTasks :many
-SELECT task_id, description, project_id, sort, is_completed, is_failed, notes
+SELECT task_id, description, project_id, sort, is_completed, is_in_progress, notes
 FROM tasks
-WHERE is_completed = 0 AND is_failed = 0
+WHERE is_completed = 0 AND is_in_progress = 0
 ORDER BY sort;
 
 -- name: UpdateTask :one
 UPDATE tasks
-SET description = ?, sort = ?, is_completed = ?, is_failed = ?, notes = ?
+SET description = ?, sort = ?, is_completed = ?, is_in_progress = ?, notes = ?
 WHERE task_id = ?
-RETURNING task_id, description, project_id, sort, is_completed, is_failed, notes;
+RETURNING task_id, description, project_id, sort, is_completed, is_in_progress, notes;
 
 -- name: UpdateTaskStatus :one
 UPDATE tasks
-SET is_completed = ?, is_failed = ?
+SET is_completed = ?, is_in_progress = ?
 WHERE task_id = ?
-RETURNING task_id, description, project_id, sort, is_completed, is_failed, notes;
+RETURNING task_id, description, project_id, sort, is_completed, is_in_progress, notes;
 
 -- name: UpdateTaskSort :exec
 UPDATE tasks
@@ -98,7 +92,7 @@ SELECT
     t.project_id,
     t.sort,
     t.is_completed,
-    t.is_failed,
+    t.is_in_progress,
     t.notes,
     p.name as project_name
 FROM tasks t
@@ -111,7 +105,7 @@ SELECT
     p.name,
     COUNT(t.task_id) as task_count,
     COUNT(CASE WHEN t.is_completed = 1 THEN 1 END) as completed_count,
-    COUNT(CASE WHEN t.is_failed = 1 THEN 1 END) as failed_count
+    COUNT(CASE WHEN t.is_in_progress = 1 THEN 1 END) as failed_count
 FROM projects p
 LEFT JOIN tasks t ON p.project_id = t.project_id
 WHERE p.project_id = ?
@@ -123,7 +117,7 @@ SELECT
     p.name,
     COUNT(t.task_id) as task_count,
     COUNT(CASE WHEN t.is_completed = 1 THEN 1 END) as completed_count,
-    COUNT(CASE WHEN t.is_failed = 1 THEN 1 END) as failed_count
+    COUNT(CASE WHEN t.is_in_progress = 1 THEN 1 END) as failed_count
 FROM projects p
 LEFT JOIN tasks t ON p.project_id = t.project_id
 GROUP BY p.project_id, p.name

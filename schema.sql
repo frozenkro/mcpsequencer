@@ -9,7 +9,7 @@ CREATE TABLE tasks (
   project_id INTEGER NOT NULL,
   sort INTEGER NOT NULL,
   is_completed INTEGER NOT NULL,
-  is_failed INTEGER NOT NULL,
+  is_in_progress INTEGER NOT NULL,
   notes TEXT NULL,
   FOREIGN KEY(project_id) REFERENCES projects(project_id)
 );

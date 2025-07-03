@@ -24,18 +24,18 @@ func (q *Queries) CreateProject(ctx context.Context, name string) (Project, erro
 
 const createTask = `-- name: CreateTask :one
 
-INSERT INTO tasks (description, project_id, sort, is_completed, is_failed, notes)
+INSERT INTO tasks (description, project_id, sort, is_completed, is_in_progress, notes)
 VALUES (?, ?, ?, ?, ?, ?)
-RETURNING task_id, description, project_id, sort, is_completed, is_failed, notes
+RETURNING task_id, description, project_id, sort, is_completed, is_in_progress, notes
 `
 
 type CreateTaskParams struct {
-	Description string
-	ProjectID   int64
-	Sort        int64
-	IsCompleted int64
-	IsFailed    int64
-	Notes       interface{}
+	Description  string
+	ProjectID    int64
+	Sort         int64
+	IsCompleted  int64
+	IsInProgress int64
+	Notes        interface{}
 }
 
 // Tasks CRUD Operations
@@ -45,7 +45,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		arg.ProjectID,
 		arg.Sort,
 		arg.IsCompleted,
-		arg.IsFailed,
+		arg.IsInProgress,
 		arg.Notes,
 	)
 	var i Task
@@ -55,7 +55,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.ProjectID,
 		&i.Sort,
 		&i.IsCompleted,
-		&i.IsFailed,
+		&i.IsInProgress,
 		&i.Notes,
 	)
 	return i, err
@@ -126,7 +126,7 @@ SELECT
     p.name,
     COUNT(t.task_id) as task_count,
     COUNT(CASE WHEN t.is_completed = 1 THEN 1 END) as completed_count,
-    COUNT(CASE WHEN t.is_failed = 1 THEN 1 END) as failed_count
+    COUNT(CASE WHEN t.is_in_progress = 1 THEN 1 END) as failed_count
 FROM projects p
 LEFT JOIN tasks t ON p.project_id = t.project_id
 GROUP BY p.project_id, p.name
@@ -171,7 +171,7 @@ func (q *Queries) GetAllProjectsWithTaskCounts(ctx context.Context) ([]GetAllPro
 }
 
 const getAllTasks = `-- name: GetAllTasks :many
-SELECT task_id, description, project_id, sort, is_completed, is_failed, notes
+SELECT task_id, description, project_id, sort, is_completed, is_in_progress, notes
 FROM tasks
 ORDER BY sort
 `
@@ -191,7 +191,7 @@ func (q *Queries) GetAllTasks(ctx context.Context) ([]Task, error) {
 			&i.ProjectID,
 			&i.Sort,
 			&i.IsCompleted,
-			&i.IsFailed,
+			&i.IsInProgress,
 			&i.Notes,
 		); err != nil {
 			return nil, err
@@ -208,7 +208,7 @@ func (q *Queries) GetAllTasks(ctx context.Context) ([]Task, error) {
 }
 
 const getCompletedTasks = `-- name: GetCompletedTasks :many
-SELECT task_id, description, project_id, sort, is_completed, is_failed, notes
+SELECT task_id, description, project_id, sort, is_completed, is_in_progress, notes
 FROM tasks
 WHERE is_completed = 1
 ORDER BY sort
@@ -229,45 +229,7 @@ func (q *Queries) GetCompletedTasks(ctx context.Context) ([]Task, error) {
 			&i.ProjectID,
 			&i.Sort,
 			&i.IsCompleted,
-			&i.IsFailed,
-			&i.Notes,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getFailedTasks = `-- name: GetFailedTasks :many
-SELECT task_id, description, project_id, sort, is_completed, is_failed, notes
-FROM tasks
-WHERE is_failed = 1
-ORDER BY sort
-`
-
-func (q *Queries) GetFailedTasks(ctx context.Context) ([]Task, error) {
-	rows, err := q.db.QueryContext(ctx, getFailedTasks)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Task
-	for rows.Next() {
-		var i Task
-		if err := rows.Scan(
-			&i.TaskID,
-			&i.Description,
-			&i.ProjectID,
-			&i.Sort,
-			&i.IsCompleted,
-			&i.IsFailed,
+			&i.IsInProgress,
 			&i.Notes,
 		); err != nil {
 			return nil, err
@@ -284,9 +246,9 @@ func (q *Queries) GetFailedTasks(ctx context.Context) ([]Task, error) {
 }
 
 const getPendingTasks = `-- name: GetPendingTasks :many
-SELECT task_id, description, project_id, sort, is_completed, is_failed, notes
+SELECT task_id, description, project_id, sort, is_completed, is_in_progress, notes
 FROM tasks
-WHERE is_completed = 0 AND is_failed = 0
+WHERE is_completed = 0 AND is_in_progress = 0
 ORDER BY sort
 `
 
@@ -305,7 +267,7 @@ func (q *Queries) GetPendingTasks(ctx context.Context) ([]Task, error) {
 			&i.ProjectID,
 			&i.Sort,
 			&i.IsCompleted,
-			&i.IsFailed,
+			&i.IsInProgress,
 			&i.Notes,
 		); err != nil {
 			return nil, err
@@ -340,7 +302,7 @@ SELECT
     p.name,
     COUNT(t.task_id) as task_count,
     COUNT(CASE WHEN t.is_completed = 1 THEN 1 END) as completed_count,
-    COUNT(CASE WHEN t.is_failed = 1 THEN 1 END) as failed_count
+    COUNT(CASE WHEN t.is_in_progress = 1 THEN 1 END) as failed_count
 FROM projects p
 LEFT JOIN tasks t ON p.project_id = t.project_id
 WHERE p.project_id = ?
@@ -369,7 +331,7 @@ func (q *Queries) GetProjectWithTaskCount(ctx context.Context, projectID int64) 
 }
 
 const getTask = `-- name: GetTask :one
-SELECT task_id, description, project_id, sort, is_completed, is_failed, notes
+SELECT task_id, description, project_id, sort, is_completed, is_in_progress, notes
 FROM tasks
 WHERE task_id = ?
 `
@@ -383,14 +345,14 @@ func (q *Queries) GetTask(ctx context.Context, taskID int64) (Task, error) {
 		&i.ProjectID,
 		&i.Sort,
 		&i.IsCompleted,
-		&i.IsFailed,
+		&i.IsInProgress,
 		&i.Notes,
 	)
 	return i, err
 }
 
 const getTasksByProject = `-- name: GetTasksByProject :many
-SELECT task_id, description, project_id, sort, is_completed, is_failed, notes
+SELECT task_id, description, project_id, sort, is_completed, is_in_progress, notes
 FROM tasks
 WHERE project_id = ?
 ORDER BY sort
@@ -411,7 +373,7 @@ func (q *Queries) GetTasksByProject(ctx context.Context, projectID int64) ([]Tas
 			&i.ProjectID,
 			&i.Sort,
 			&i.IsCompleted,
-			&i.IsFailed,
+			&i.IsInProgress,
 			&i.Notes,
 		); err != nil {
 			return nil, err
@@ -435,7 +397,7 @@ SELECT
     t.project_id,
     t.sort,
     t.is_completed,
-    t.is_failed,
+    t.is_in_progress,
     t.notes,
     p.name as project_name
 FROM tasks t
@@ -444,14 +406,14 @@ ORDER BY p.name, t.sort
 `
 
 type GetTasksWithProjectRow struct {
-	TaskID      int64
-	Description string
-	ProjectID   int64
-	Sort        int64
-	IsCompleted int64
-	IsFailed    int64
-	Notes       interface{}
-	ProjectName string
+	TaskID       int64
+	Description  string
+	ProjectID    int64
+	Sort         int64
+	IsCompleted  int64
+	IsInProgress int64
+	Notes        interface{}
+	ProjectName  string
 }
 
 // Joined queries for richer data
@@ -470,7 +432,7 @@ func (q *Queries) GetTasksWithProject(ctx context.Context) ([]GetTasksWithProjec
 			&i.ProjectID,
 			&i.Sort,
 			&i.IsCompleted,
-			&i.IsFailed,
+			&i.IsInProgress,
 			&i.Notes,
 			&i.ProjectName,
 		); err != nil {
@@ -508,18 +470,18 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (P
 
 const updateTask = `-- name: UpdateTask :one
 UPDATE tasks
-SET description = ?, sort = ?, is_completed = ?, is_failed = ?, notes = ?
+SET description = ?, sort = ?, is_completed = ?, is_in_progress = ?, notes = ?
 WHERE task_id = ?
-RETURNING task_id, description, project_id, sort, is_completed, is_failed, notes
+RETURNING task_id, description, project_id, sort, is_completed, is_in_progress, notes
 `
 
 type UpdateTaskParams struct {
-	Description string
-	Sort        int64
-	IsCompleted int64
-	IsFailed    int64
-	Notes       interface{}
-	TaskID      int64
+	Description  string
+	Sort         int64
+	IsCompleted  int64
+	IsInProgress int64
+	Notes        interface{}
+	TaskID       int64
 }
 
 func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
@@ -527,7 +489,7 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		arg.Description,
 		arg.Sort,
 		arg.IsCompleted,
-		arg.IsFailed,
+		arg.IsInProgress,
 		arg.Notes,
 		arg.TaskID,
 	)
@@ -538,7 +500,7 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		&i.ProjectID,
 		&i.Sort,
 		&i.IsCompleted,
-		&i.IsFailed,
+		&i.IsInProgress,
 		&i.Notes,
 	)
 	return i, err
@@ -562,19 +524,19 @@ func (q *Queries) UpdateTaskSort(ctx context.Context, arg UpdateTaskSortParams) 
 
 const updateTaskStatus = `-- name: UpdateTaskStatus :one
 UPDATE tasks
-SET is_completed = ?, is_failed = ?
+SET is_completed = ?, is_in_progress = ?
 WHERE task_id = ?
-RETURNING task_id, description, project_id, sort, is_completed, is_failed, notes
+RETURNING task_id, description, project_id, sort, is_completed, is_in_progress, notes
 `
 
 type UpdateTaskStatusParams struct {
-	IsCompleted int64
-	IsFailed    int64
-	TaskID      int64
+	IsCompleted  int64
+	IsInProgress int64
+	TaskID       int64
 }
 
 func (q *Queries) UpdateTaskStatus(ctx context.Context, arg UpdateTaskStatusParams) (Task, error) {
-	row := q.db.QueryRowContext(ctx, updateTaskStatus, arg.IsCompleted, arg.IsFailed, arg.TaskID)
+	row := q.db.QueryRowContext(ctx, updateTaskStatus, arg.IsCompleted, arg.IsInProgress, arg.TaskID)
 	var i Task
 	err := row.Scan(
 		&i.TaskID,
@@ -582,7 +544,7 @@ func (q *Queries) UpdateTaskStatus(ctx context.Context, arg UpdateTaskStatusPara
 		&i.ProjectID,
 		&i.Sort,
 		&i.IsCompleted,
-		&i.IsFailed,
+		&i.IsInProgress,
 		&i.Notes,
 	)
 	return i, err

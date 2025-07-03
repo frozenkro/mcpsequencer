@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/frozenkro/mcpsequencer/db"
 	"github.com/frozenkro/mcpsequencer/projectsdb"
@@ -10,6 +9,14 @@ import (
 
 const TaskSortLast int64 = -1
 const TaskSortFirst int64 = 0
+
+type TaskState int
+
+const (
+	StatePending TaskState = iota
+	StateInProgress
+	StateComplete
+)
 
 type Services struct {
 	Queries *projectsdb.Queries
@@ -99,5 +106,26 @@ func (s *Services) AddTask(ctx context.Context, project_id int64, task string, s
 	}
 
 	_, err := s.Queries.CreateTask(ctx, params)
+	return err
+}
+
+func (s *Services) UpdateTaskState(ctx context.Context, taskId int64, state TaskState) error {
+	s.tryInit()
+
+	inProgress := 0
+	complete := 0
+	if state == StateInProgress {
+		inProgress = 1
+	}
+	if state == StateComplete {
+		complete = 1
+	}
+
+	params := projectsdb.UpdateTaskStatusParams{
+		TaskID:       taskId,
+		IsInProgress: int64(inProgress),
+		IsCompleted:  int64(complete),
+	}
+	_, err := s.Queries.UpdateTaskStatus(ctx, params)
 	return err
 }
