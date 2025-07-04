@@ -26,11 +26,12 @@ func TestCreateProject(t *testing.T) {
 	conn, err := db.DB.Conn(ctx)
 	assert.Nil(t, err)
 
-	rows, err := conn.QueryContext(ctx, "SELECT * FROM projects WHERE Name = ?", projectName)
+	rows, err := conn.QueryContext(ctx, "SELECT project_id, name FROM projects WHERE Name = ?", projectName)
 	assert.Nil(t, err)
 
 	p := projectsdb.Project{}
-	err = rows.Scan(p)
+	rows.Next()
+	err = rows.Scan(p.ProjectID, p.Name)
 	assert.Nil(t, err)
 
 	assert.False(t, rows.Next())

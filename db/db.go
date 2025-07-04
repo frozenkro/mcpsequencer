@@ -35,7 +35,7 @@ func Init() {
 		project_id INTEGER NOT NULL,
 		sort INTEGER NOT NULL,
 		is_completed INTEGER NOT NULL,
-		is_failed INTEGER NOT NULL,
+		is_in_progress INTEGER NOT NULL,
 		notes TEXT NULL,
 		FOREIGN KEY(project_id) REFERENCES projects(project_id)
 	);
@@ -66,7 +66,7 @@ func InsertProject(p Project) error {
 			project_id,
 			sort,
 			is_completed,
-			is_failed,
+			is_in_progress,
 		  notes)
 		VALUES (?, ?, ?, ?, ?)
 	`
