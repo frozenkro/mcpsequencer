@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 
+	"github.com/frozenkro/mcpsequencer/globals"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -13,13 +14,11 @@ type Project struct {
 	Tasks []string `json:"tasks"`
 }
 
-const dbFileName = "projects.db"
-
 var DB *sql.DB
 
 func Init() {
 	var err error
-	DB, err = sql.Open("sqlite3", dbFileName)
+	DB, err = sql.Open("sqlite3", globals.DbName)
 	if err != nil {
 		log.Fatal(err)
 	}
