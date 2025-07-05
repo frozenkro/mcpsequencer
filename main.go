@@ -24,7 +24,7 @@ func main() {
 	)
 
 	// Add tool
-	tool := mcp.NewTool("create_project",
+	createProjectTool := mcp.NewTool("createProject",
 		mcp.WithDescription("Create a new LLM-driven project (collection of small tasks)"),
 		mcp.WithString("ProjectName",
 			mcp.Required(),
@@ -36,8 +36,78 @@ func main() {
 		),
 	)
 
+	renameProjectTool := mcp.NewTool("renameProject",
+		mcp.WithDescription("Rename an LLM-driven project"),
+		mcp.WithString("ProjectName",
+			mcp.Required(),
+			mcp.Description("New project name"),
+		),
+		mcp.WithNumber("ProjectID",
+			mcp.Required(),
+			mcp.Description("ProjectID of project to rename"),
+		),
+	)
+
+	deleteProjectTool := mcp.NewTool("deleteProject",
+		mcp.WithDescription("Delete an LLM-driven project"),
+		mcp.WithNumber("ProjectID",
+			mcp.Required(),
+			mcp.Description("ProjectID of project to delete"),
+		),
+	)
+
+	addTaskTool := mcp.NewTool("addTask",
+		mcp.WithDescription("Add new task to an LLM-driven project"),
+		mcp.WithNumber("ProjectID",
+			mcp.Required(),
+			mcp.Description("ID of Project to add task to"),
+		),
+		mcp.WithString("Description",
+			mcp.Required(),
+			mcp.Description("Name / Description of new task"),
+		),
+		mcp.WithNumber("Sort",
+			mcp.Description("Sort order of new task. 0-indexed, -1 for last"),
+		),
+	)
+
+	beginTaskTool := mcp.NewTool("beginTask",
+		mcp.WithDescription("Indicate that a task is in-progress"),
+		mcp.WithNumber("TaskID",
+			mcp.Required(),
+			mcp.Description("ID of task"),
+		),
+	)
+
+	completeTaskTool := mcp.NewTool("completeTask",
+		mcp.WithDescription("Indicate that a task is completed"),
+		mcp.WithNumber("TaskID",
+			mcp.Required(),
+			mcp.Description("ID of task"),
+		),
+	)
+
+	getProjectsTool := mcp.NewTool("getAllProjects",
+		mcp.WithDescription("Get a list of all project names and IDs"),
+	)
+
+	getTasksTool := mcp.NewTool("getTasksForProject",
+		mcp.WithDescription("Get all tasks for a project"),
+		mcp.WithNumber("ProjectID",
+			mcp.Required(),
+			mcp.Description("ID of project"),
+		),
+	)
+
 	// Add tool handler
-	s.AddTool(tool, handlers.CreateProjectHandler)
+	s.AddTool(createProjectTool, handlers.CreateProjectHandler)
+	s.AddTool(renameProjectTool, handlers.RenameProjectHandler)
+	s.AddTool(deleteProjectTool, handlers.DeleteProjectHandler)
+	s.AddTool(addTaskTool, handlers.AddTaskHandler)
+	s.AddTool(beginTaskTool, handlers.BeginTaskHandler)
+	s.AddTool(completeTaskTool, handlers.CompleteTaskHandler)
+	s.AddTool(getProjectsTool, handlers.GetProjectsHandler)
+	s.AddTool(getTasksTool, handlers.GetTasksHandler)
 
 	// Set up DB
 	db.Init()

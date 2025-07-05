@@ -52,6 +52,12 @@ func (s *Services) CreateProject(ctx context.Context, name string, tasks []strin
 	return nil
 }
 
+func (s *Services) GetProjects(ctx context.Context) ([]projectsdb.Project, error) {
+	s.tryInit()
+
+	return s.Queries.GetAllProjects(ctx)
+}
+
 func (s *Services) RenameProject(ctx context.Context, projectId int64, name string) error {
 	s.tryInit()
 
@@ -72,6 +78,12 @@ func (s *Services) DeleteProject(ctx context.Context, project_id int64) error {
 		return err
 	}
 	return nil
+}
+
+func (s *Services) GetTasksByProject(ctx context.Context, projectId int64) ([]projectsdb.Task, error) {
+	s.tryInit()
+
+	return s.Queries.GetTasksByProject(ctx, projectId)
 }
 
 func (s *Services) AddTask(ctx context.Context, projectId int64, task string, sort int64) error {
