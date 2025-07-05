@@ -123,7 +123,7 @@ func GetProjectsHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 }
 
 func GetTasksHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	projectId, err := request.RequireInt("projectID")
+	projectId, err := request.RequireInt("ProjectID")
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
