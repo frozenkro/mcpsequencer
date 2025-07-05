@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/frozenkro/mcpsequencer/db"
+	"github.com/frozenkro/mcpsequencer/globals"
 	"github.com/frozenkro/mcpsequencer/handlers"
 	"github.com/frozenkro/mcpsequencer/services"
 	"github.com/frozenkro/mcpsequencer/tools"
@@ -16,6 +17,12 @@ var DefaultPort int = 8080
 var Svc services.Services
 
 func main() {
+	env := globals.Dev
+	if isProd() {
+		env = globals.Prod
+	}
+	globals.Init(env)
+
 	// Create a new MCP server
 	s := server.NewMCPServer(
 		"LLM Project Sequencer",
@@ -75,4 +82,13 @@ func isHTTP() (bool, int) {
 	}
 
 	return false, 0
+}
+
+func isProd() bool {
+	for _, v := range os.Args {
+		if v == "--prod" {
+			return true
+		}
+	}
+	return false
 }
