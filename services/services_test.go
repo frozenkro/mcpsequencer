@@ -31,10 +31,26 @@ func TestCreateProject(t *testing.T) {
 
 	p := projectsdb.Project{}
 	rows.Next()
-	err = rows.Scan(p.ProjectID, p.Name)
+	err = rows.Scan(&p.ProjectID, &p.Name)
 	assert.Nil(t, err)
 
 	assert.False(t, rows.Next())
 
 	assert.Equal(t, projectName, p.Name)
+
+	rows, err = conn.QueryContext(ctx, `
+		SELECT task_id, 
+		description,
+		sort
+		FROM tasks
+		WHERE project_id = ?
+	`, p.ProjectID)
+
+	for rows.Next() {
+		task := projectsdb.Task{}
+		err = rows.Scan(&task.TaskID, &task.Description, &task.Sort)
+		assert.Nil(t, err)
+
+		assert.Equal(t, tasks[task.Sort], task.Description)
+	}
 }
