@@ -52,11 +52,11 @@ func (s *Services) CreateProject(ctx context.Context, name string, tasks []strin
 	return nil
 }
 
-func (s *Services) RenameProject(ctx context.Context, project_id int64, name string) error {
+func (s *Services) RenameProject(ctx context.Context, projectId int64, name string) error {
 	s.tryInit()
 
 	params := projectsdb.UpdateProjectParams{
-		ProjectID: project_id,
+		ProjectID: projectId,
 		Name:      name,
 	}
 	if _, err := s.Queries.UpdateProject(ctx, params); err != nil {
@@ -74,11 +74,11 @@ func (s *Services) DeleteProject(ctx context.Context, project_id int64) error {
 	return nil
 }
 
-func (s *Services) AddTask(ctx context.Context, project_id int64, task string, sort int64) error {
+func (s *Services) AddTask(ctx context.Context, projectId int64, task string, sort int64) error {
 	s.tryInit()
 
 	if sort != TaskSortLast {
-		tasks, err := s.Queries.GetTasksByProject(ctx, project_id)
+		tasks, err := s.Queries.GetTasksByProject(ctx, projectId)
 		if err != nil {
 			return err
 		}
@@ -101,7 +101,7 @@ func (s *Services) AddTask(ctx context.Context, project_id int64, task string, s
 
 	params := projectsdb.CreateTaskParams{
 		Description: task,
-		ProjectID:   project_id,
+		ProjectID:   projectId,
 		Sort:        sort,
 	}
 

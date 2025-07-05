@@ -7,34 +7,14 @@ import (
 	"strconv"
 
 	"github.com/frozenkro/mcpsequencer/db"
+	"github.com/frozenkro/mcpsequencer/handlers"
+	"github.com/frozenkro/mcpsequencer/services"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
 
 var DefaultPort int = 8080
-
-func createProjectHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	name, err := request.RequireString("ProjectName")
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-
-	tasks, err := request.RequireStringSlice("Tasks")
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-
-	project := db.Project{
-		Name:  name,
-		Tasks: tasks,
-	}
-	err = db.InsertProject(project)
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-
-	return mcp.NewToolResultText(fmt.Sprintf("Project %s created successfully!", name)), nil
-}
+var Svc services.Services
 
 func main() {
 	// Create a new MCP server
@@ -58,10 +38,11 @@ func main() {
 	)
 
 	// Add tool handler
-	s.AddTool(tool, createProjectHandler)
+	s.AddTool(tool, handlers.CreateProjectHandler)
 
 	// Set up DB
 	db.Init()
+	Svc = services.Services{}
 
 	if http, port := isHTTP(); http {
 		fmt.Printf("Starting HTTP Server...")
