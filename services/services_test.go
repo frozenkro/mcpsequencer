@@ -2,6 +2,7 @@ package services_test
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/frozenkro/mcpsequencer/db"
@@ -11,9 +12,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateProject(t *testing.T) {
+func TestMain(m *testing.M) {
 	globals.Init(globals.Test)
+	os.Remove(globals.DbName)
 	db.Init()
+	code := m.Run()
+	os.Exit(code)
+}
+
+func TestCreateProject(t *testing.T) {
 	s := services.Services{}
 	ctx := context.Background()
 
