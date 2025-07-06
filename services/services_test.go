@@ -159,3 +159,43 @@ func TestDeleteProject(t *testing.T) {
 	err = row.Scan(&p.ProjectID, &p.Name)
 	assert.ErrorIs(t, sql.ErrNoRows, err)
 }
+
+func TestGetTasksByProject(t *testing.T) {
+	projectName := "Test Project With Tasks"
+	taskNames := []string{"Test task 1", "Test task 2"}
+
+	res, err := conn.ExecContext(ctx,
+		`INSERT INTO projects (name)
+		VALUES (?)`,
+		projectName,
+	)
+	assert.Nil(t, err)
+
+	projectId, err := res.LastInsertId()
+	assert.Nil(t, err)
+
+	_, err = conn.ExecContext(ctx,
+		`INSERT INTO tasks 
+		(description, project_id, sort, is_completed, is_in_progress)
+		VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)`,
+		taskNames[0], projectId, 0, 0, 0,
+		taskNames[1], projectId, 1, 0, 0,
+	)
+	assert.Nil(t, err)
+
+	tasks, err := s.GetTasksByProject(ctx, projectId)
+	assert.Nil(t, err)
+
+	assert.Equal(t, 2, len(tasks))
+	task1Found := false
+	task2Found := false
+	for _, v := range tasks {
+		if v.Description == taskNames[0] {
+			task1Found = true
+		} else if v.Description == taskNames[1] {
+			task2Found = true
+		}
+	}
+	assert.True(t, task1Found)
+	assert.True(t, task2Found)
+}
