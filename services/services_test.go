@@ -2,6 +2,8 @@ package services_test
 
 import (
 	"context"
+	"database/sql"
+	"log"
 	"os"
 	"testing"
 
@@ -12,25 +14,36 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	s    services.Services
+	ctx  context.Context
+	conn *sql.Conn
+	err  error
+)
+
 func TestMain(m *testing.M) {
 	globals.Init(globals.Test)
 	os.Remove(globals.DbName)
+
+	s = services.Services{}
+	ctx = context.Background()
+
 	db.Init()
+
+	conn, err = db.DB.Conn(ctx)
+	if err != nil {
+		log.Fatalf("ERROR: DB Connection Failed during Test Initialization\n%v\n", err.Error())
+	}
+
 	code := m.Run()
 	os.Exit(code)
 }
 
 func TestCreateProject(t *testing.T) {
-	s := services.Services{}
-	ctx := context.Background()
-
 	projectName := "Test Project Name"
 	tasks := []string{"Test task 1", "Test task 2"}
 
 	err := s.CreateProject(ctx, projectName, tasks)
-	assert.Nil(t, err)
-
-	conn, err := db.DB.Conn(ctx)
 	assert.Nil(t, err)
 
 	rows, err := conn.QueryContext(ctx, "SELECT project_id, name FROM projects WHERE Name = ?", projectName)
@@ -63,11 +76,6 @@ func TestCreateProject(t *testing.T) {
 }
 
 func TestGetProjects(t *testing.T) {
-	s := services.Services{}
-	ctx := context.Background()
-	conn, err := db.DB.Conn(ctx)
-	assert.Nil(t, err)
-
 	p1 := projectsdb.Project{
 		ProjectID: 1,
 		Name:      "TestProjectName1",
@@ -77,7 +85,7 @@ func TestGetProjects(t *testing.T) {
 		Name:      "TestProjectName2",
 	}
 
-	_, err = conn.ExecContext(ctx, `
+	_, err := conn.ExecContext(ctx, `
 		INSERT INTO projects (Name) 
 		VALUES (?), (?)`,
 		p1.Name, p2.Name)
@@ -98,4 +106,56 @@ func TestGetProjects(t *testing.T) {
 
 	assert.True(t, project1Found)
 	assert.True(t, project2Found)
+}
+
+func TestRenameProject(t *testing.T) {
+	oldName := "BeforeRenameTest"
+	newName := "AfterRenameTest"
+
+	res, err := conn.ExecContext(ctx, `
+		INSERT INTO projects (Name)
+		VALUES (?)
+		`,
+		oldName,
+	)
+	assert.Nil(t, err)
+
+	projectId, err := res.LastInsertId()
+	assert.Nil(t, err)
+
+	err = s.RenameProject(ctx, projectId, newName)
+	assert.Nil(t, err)
+
+	row := conn.QueryRowContext(ctx,
+		"SELECT project_id, name FROM projects WHERE project_id = ?",
+		projectId,
+	)
+	p := projectsdb.Project{}
+	err = row.Scan(&p.ProjectID, &p.Name)
+
+	assert.Nil(t, err)
+
+	assert.Equal(t, newName, p.Name)
+}
+
+func TestDeleteProject(t *testing.T) {
+	res, err := conn.ExecContext(ctx, `
+		INSERT INTO projects (Name)
+		VALUES (?)
+		`,
+		"To Be Deleted",
+	)
+	assert.Nil(t, err)
+	projectId, err := res.LastInsertId()
+	assert.Nil(t, err)
+
+	err = s.DeleteProject(ctx, projectId)
+
+	row := conn.QueryRowContext(ctx,
+		"SELECT project_id, name FROM projects WHERE project_id = ?",
+		projectId,
+	)
+	p := projectsdb.Project{}
+	err = row.Scan(&p.ProjectID, &p.Name)
+	assert.ErrorIs(t, sql.ErrNoRows, err)
 }
