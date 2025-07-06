@@ -17,9 +17,9 @@ var DefaultPort int = 8080
 var Svc services.Services
 
 func main() {
-	env := globals.Dev
-	if isProd() {
-		env = globals.Prod
+	env := globals.Prod
+	if isDev() {
+		env = globals.Dev
 	}
 	globals.Init(env)
 
@@ -84,9 +84,9 @@ func isHTTP() (bool, int) {
 	return false, 0
 }
 
-func isProd() bool {
+func isDev() bool {
 	for _, v := range os.Args {
-		if v == "--prod" {
+		if v == "--dev" {
 			return true
 		}
 	}
