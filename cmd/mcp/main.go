@@ -5,11 +5,11 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/frozenkro/mcpsequencer/db"
-	"github.com/frozenkro/mcpsequencer/globals"
-	"github.com/frozenkro/mcpsequencer/handlers"
-	"github.com/frozenkro/mcpsequencer/services"
-	"github.com/frozenkro/mcpsequencer/tools"
+	"github.com/frozenkro/mcpsequencer/internal/db"
+	"github.com/frozenkro/mcpsequencer/internal/globals"
+	"github.com/frozenkro/mcpsequencer/internal/handlers"
+	"github.com/frozenkro/mcpsequencer/internal/services"
+	"github.com/frozenkro/mcpsequencer/internal/tools"
 	"github.com/mark3labs/mcp-go/server"
 )
 

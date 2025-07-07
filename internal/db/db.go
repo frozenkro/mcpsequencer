@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/frozenkro/mcpsequencer/globals"
+	"github.com/frozenkro/mcpsequencer/internal/globals"
 	_ "github.com/mattn/go-sqlite3"
 )
 

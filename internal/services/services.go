@@ -3,8 +3,8 @@ package services
 import (
 	"context"
 
-	"github.com/frozenkro/mcpsequencer/db"
-	"github.com/frozenkro/mcpsequencer/projectsdb"
+	"github.com/frozenkro/mcpsequencer/internal/db"
+	"github.com/frozenkro/mcpsequencer/internal/projectsdb"
 )
 
 const TaskSortLast int64 = -1

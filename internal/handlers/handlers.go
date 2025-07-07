@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/frozenkro/mcpsequencer/services"
+	"github.com/frozenkro/mcpsequencer/internal/services"
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
