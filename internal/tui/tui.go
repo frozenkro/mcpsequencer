@@ -1,31 +1,48 @@
 package tui
 
 import (
-	"fmt"
-	"os"
+	// "fmt"
+	// "os"
+
+	"context"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/frozenkro/mcpsequencer/internal/db"
-	"github.com/frozenkro/mcpsequencer/internal/globals"
-	"github.com/frozenkro/mcpsequencer/internal/utils"
+	// "github.com/frozenkro/mcpsequencer/internal/db"
+	// "github.com/frozenkro/mcpsequencer/internal/globals"
+	"github.com/frozenkro/mcpsequencer/internal/projectsdb"
+	"github.com/frozenkro/mcpsequencer/internal/services"
+	// "github.com/frozenkro/mcpsequencer/internal/utils"
 )
 
+var svc services.Services
+var ctx context.Context
+
 type model struct {
-	choices  []string         // items on the to-do list
-	cursor   int              // which to-do list item our cursor is pointing at
-	selected map[int]struct{} // which to-do items are selected
+	projects      []projectsdb.Project
+	activeProject *projectsdb.Project
+	tasks         []projectsdb.Task
+	cursor        int
+	activeWindow  ActiveWindow
 }
 
-func InitialModel() model {
-	return model{
-		// Our to-do list is a grocery list
-		choices: []string{"Buy carrots", "Buy celery", "Buy kohlrabi"},
+type ActiveWindow int
 
-		// A map which indicates which choices are selected. We're using
-		// the map like a mathematical set. The keys refer to the indexes
-		// of the `choices` slice, above.
-		selected: make(map[int]struct{}),
+const (
+	ProjectWindow ActiveWindow = iota
+	TasksWindow
+)
+
+func InitialModel() (model, error) {
+	ctx = context.Background()
+	svc = services.Services{}
+	projects, err := svc.GetProjects(ctx)
+	if err != nil {
+		return model{}, err
 	}
+
+	return model{
+		projects: projects,
+	}, nil
 }
 
 func (m model) Init() tea.Cmd {
@@ -34,6 +51,7 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// return nil, nil
 	switch msg := msg.(type) {
 
 	// Is it a key press?
@@ -54,19 +72,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// The "down" and "j" keys move the cursor down
 		case "down", "j":
-			if m.cursor < len(m.choices)-1 {
+			if m.cursor < m.activeListLen()-1 {
 				m.cursor++
 			}
 
 		// The "enter" key and the spacebar (a literal space) toggle
 		// the selected state for the item that the cursor is pointing at.
 		case "enter", " ":
-			_, ok := m.selected[m.cursor]
-			if ok {
-				delete(m.selected, m.cursor)
-			} else {
-				m.selected[m.cursor] = struct{}{}
-			}
+			m.handleSelect()
 		}
 	}
 
@@ -76,46 +89,48 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
+	return ""
 	// The header
-	s := "What should we buy at the market?\n\n"
+	// s := "What should we buy at the market?\n\n"
 
-	// Iterate over our choices
-	for i, choice := range m.choices {
+	// // Iterate over our choices
+	// for i, choice := range m.choices {
 
-		// Is the cursor pointing at this choice?
-		cursor := " " // no cursor
-		if m.cursor == i {
-			cursor = ">" // cursor!
-		}
+	// 	// Is the cursor pointing at this choice?
+	// 	cursor := " " // no cursor
+	// 	if m.cursor == i {
+	// 		cursor = ">" // cursor!
+	// 	}
 
-		// Is this choice selected?
-		checked := " " // not selected
-		if _, ok := m.selected[i]; ok {
-			checked = "x" // selected!
-		}
+	// 	// Is this choice selected?
+	// 	checked := " " // not selected
+	// 	if _, ok := m.selected[i]; ok {
+	// 		checked = "x" // selected!
+	// 	}
 
-		// Render the row
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
-	}
+	// 	// Render the row
+	// 	s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
+	// }
 
-	// The footer
-	s += "\nPress q to quit.\n"
+	// // The footer
+	// s += "\nPress q to quit.\n"
 
-	// Send the UI for rendering
-	return s
+	// // Send the UI for rendering
+	// return s
 }
 
-func main() {
-	env := globals.Prod
-	if utils.IsDev() {
-		env = globals.Dev
+func (m model) activeListLen() int {
+	if m.activeWindow == ProjectWindow {
+		return len(m.projects)
 	}
-	globals.Init(env)
-	db.Init()
+	if m.activeWindow == TasksWindow {
+		return len(m.tasks)
+	}
+	return 0
+}
 
-	p := tea.NewProgram(initialModel())
-	if _, err := p.Run(); err != nil {
-		fmt.Printf("Alas, there's been an error: %v", err)
-		os.Exit(1)
+func (m model) handleSelect() {
+	if m.activeWindow == ProjectWindow {
+		m.activeProject = &m.projects[m.cursor]
 	}
 }
