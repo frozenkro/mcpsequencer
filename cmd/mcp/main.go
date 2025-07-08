@@ -7,21 +7,22 @@ import (
 
 	"github.com/frozenkro/mcpsequencer/internal/db"
 	"github.com/frozenkro/mcpsequencer/internal/globals"
-	"github.com/frozenkro/mcpsequencer/internal/handlers"
+	"github.com/frozenkro/mcpsequencer/internal/mcp/handlers"
+	"github.com/frozenkro/mcpsequencer/internal/mcp/tools"
 	"github.com/frozenkro/mcpsequencer/internal/services"
-	"github.com/frozenkro/mcpsequencer/internal/tools"
+	"github.com/frozenkro/mcpsequencer/internal/utils"
 	"github.com/mark3labs/mcp-go/server"
 )
 
 var DefaultPort int = 8080
-var Svc services.Services
 
 func main() {
 	env := globals.Prod
-	if isDev() {
+	if utils.IsDev() {
 		env = globals.Dev
 	}
 	globals.Init(env)
+	db.Init()
 
 	// Create a new MCP server
 	s := server.NewMCPServer(
@@ -38,10 +39,6 @@ func main() {
 	s.AddTool(tools.CompleteTaskTool, handlers.CompleteTaskHandler)
 	s.AddTool(tools.GetProjectsTool, handlers.GetProjectsHandler)
 	s.AddTool(tools.GetTasksTool, handlers.GetTasksHandler)
-
-	// Set up DB
-	db.Init()
-	Svc = services.Services{}
 
 	if http, port := isHTTP(); http {
 		fmt.Printf("Starting HTTP Server...")
@@ -82,13 +79,4 @@ func isHTTP() (bool, int) {
 	}
 
 	return false, 0
-}
-
-func isDev() bool {
-	for _, v := range os.Args {
-		if v == "--dev" {
-			return true
-		}
-	}
-	return false
 }
