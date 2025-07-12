@@ -9,7 +9,6 @@ import (
 	"github.com/frozenkro/mcpsequencer/internal/globals"
 	"github.com/frozenkro/mcpsequencer/internal/mcp/handlers"
 	"github.com/frozenkro/mcpsequencer/internal/mcp/tools"
-	"github.com/frozenkro/mcpsequencer/internal/services"
 	"github.com/frozenkro/mcpsequencer/internal/utils"
 	"github.com/mark3labs/mcp-go/server"
 )

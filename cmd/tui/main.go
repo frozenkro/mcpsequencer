@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -19,7 +20,11 @@ func main() {
 	globals.Init(env)
 	db.Init()
 
-	p := tea.NewProgram(tui.InitialModel())
+	m, err := tui.InitialModel()
+	if err != nil {
+		log.Fatalf("Error initializing state: %v", err.Error())
+	}
+	p := tea.NewProgram(m)
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
