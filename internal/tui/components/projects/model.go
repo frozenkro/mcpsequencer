@@ -2,6 +2,7 @@ package projects
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/frozenkro/mcpsequencer/internal/services"
 	"github.com/frozenkro/mcpsequencer/internal/tui/constants"
+	"github.com/frozenkro/mcpsequencer/internal/tui/logger"
 	"github.com/frozenkro/mcpsequencer/internal/tui/viewmodels"
 )
 
@@ -82,17 +84,21 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) View() string {
-	return ""
+	// TODO add additional icons and other components here
+	return m.List.View()
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	logger.Logger.Println("Projects model update")
 	switch msg := msg.(type) {
 
 	case tea.KeyMsg:
 
 		if constants.KeyMatch(msg, constants.KeyUp1, constants.KeyUp2, constants.KeyDown1, constants.KeyDown2) {
+			logger.Logger.Println("Up or down")
 			l, cmd := m.List.Update(msg)
 			m.List = l
+			logger.Logger.Println("Returning list update cmd")
 			return m, cmd
 		}
 
@@ -101,8 +107,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				item := m.List.Items()[m.List.GlobalIndex()]
 				if project, ok := item.(viewmodels.ProjectView); ok {
 					m.Selected = &project
+					logger.Logger.Println(fmt.Sprintf("project selected: '%v'", m.Selected.ProjectID))
 					return constants.ProjectSelectedMsg{ProjectID: m.Selected.ProjectID}
 				}
+				logger.Logger.Println("Failed to parse Item to ProjectView")
 				return nil
 			}
 		}

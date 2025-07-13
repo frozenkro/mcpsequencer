@@ -2,13 +2,16 @@ package tui
 
 import (
 	"context"
+	"log"
 
 	"github.com/frozenkro/mcpsequencer/internal/services"
 	"github.com/frozenkro/mcpsequencer/internal/tui/components/projects"
 	"github.com/frozenkro/mcpsequencer/internal/tui/components/tasks"
+	tuilog "github.com/frozenkro/mcpsequencer/internal/tui/logger"
 )
 
-func InitialModel() (Model, error) {
+func InitialModel(logger *log.Logger) (Model, error) {
+	tuilog.SetLogger(logger)
 	ctx := context.Background()
 	svc := services.Services{}
 

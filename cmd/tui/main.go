@@ -18,9 +18,16 @@ func main() {
 		env = globals.Dev
 	}
 	globals.Init(env)
+
+	logger, closeLogFile, err := setupLogger()
+	if err != nil {
+		fmt.Printf("Error creating logger: %v\n", err.Error())
+	}
+	defer closeLogFile()
+
 	db.Init()
 
-	m, err := tui.InitialModel()
+	m, err := tui.InitialModel(logger)
 	if err != nil {
 		log.Fatalf("Error initializing state: %v", err.Error())
 	}
@@ -29,4 +36,15 @@ func main() {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)
 	}
+}
+
+func setupLogger() (*log.Logger, func() error, error) {
+	file, err := os.OpenFile("mcpsequencertui.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	logger := log.New(file, "", log.LstdFlags)
+
+	return logger, file.Close, nil
 }

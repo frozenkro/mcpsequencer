@@ -36,8 +36,9 @@ func createDelegate() list.DefaultDelegate {
 	return delegate
 }
 
-func (m Model) HandleProjectSelected(ctx context.Context, msg constants.ProjectSelectedMsg) error {
-	tasksData, err := services.Services{}.Queries.GetTasksByProject(ctx, int64(msg.ProjectID))
+func (m *Model) HandleProjectSelected(ctx context.Context, msg constants.ProjectSelectedMsg) error {
+	svc := services.Services{}
+	tasksData, err := svc.GetTasksByProject(ctx, int64(msg.ProjectID))
 	if err != nil {
 		return fmt.Errorf("Error retrieving tasks data for project %v: %w\n", err)
 	}
@@ -56,7 +57,8 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) View() string {
-	return ""
+	// TODO add additional icons and other components here
+	return m.List.View()
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
