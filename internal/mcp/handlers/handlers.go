@@ -140,3 +140,19 @@ func GetTasksHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Cal
 
 	return mcp.NewToolResultText(string(tasksJson)), nil
 }
+
+func GetTaskListInstructionsHandler() string {
+	return `
+Tasks should be defined in json, with the goal of being as parallelizable as possible.
+
+Tasks are defined as follows:
+{
+	name: string,
+	description: string, // Include a detailed description of the task
+	sortId: int,
+	dependencies: []int // the sortId of any tasks that must be completed before this task.
+}
+
+You should return a json array of 'Task' items.
+	`
+}

@@ -1,2 +1,4 @@
 mcpsequencer
 *.db
+main
+*.log

@@ -76,3 +76,7 @@ var GetTasksTool = mcp.NewTool("getTasksForProject",
 		mcp.Description("ID of project"),
 	),
 )
+
+var GetTaskListInstructionsTool = mcp.NewTool("getTaskListInstructions",
+	mcp.WithDescription("Get instructions on how tasks are defined and organized"),
+)
