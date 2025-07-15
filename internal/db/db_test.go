@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/frozenkro/mcpsequencer/globals"
+	"github.com/frozenkro/mcpsequencer/internal/globals"
 )
 
 func TestInit(t *testing.T) {
