@@ -6,4 +6,4 @@ sql:
     gen:
       go:
         package: "projectsdb"
-        out: "projectsdb"
+        out: "internal/projectsdb"

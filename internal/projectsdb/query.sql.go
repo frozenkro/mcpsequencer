@@ -38,8 +38,18 @@ type CreateTaskParams struct {
 	Notes        interface{}
 }
 
+type CreateTaskRow struct {
+	TaskID       int64
+	Description  string
+	ProjectID    int64
+	Sort         int64
+	IsCompleted  int64
+	IsInProgress int64
+	Notes        interface{}
+}
+
 // Tasks CRUD Operations
-func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
+func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (CreateTaskRow, error) {
 	row := q.db.QueryRowContext(ctx, createTask,
 		arg.Description,
 		arg.ProjectID,
@@ -48,7 +58,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		arg.IsInProgress,
 		arg.Notes,
 	)
-	var i Task
+	var i CreateTaskRow
 	err := row.Scan(
 		&i.TaskID,
 		&i.Description,
@@ -176,15 +186,25 @@ FROM tasks
 ORDER BY sort
 `
 
-func (q *Queries) GetAllTasks(ctx context.Context) ([]Task, error) {
+type GetAllTasksRow struct {
+	TaskID       int64
+	Description  string
+	ProjectID    int64
+	Sort         int64
+	IsCompleted  int64
+	IsInProgress int64
+	Notes        interface{}
+}
+
+func (q *Queries) GetAllTasks(ctx context.Context) ([]GetAllTasksRow, error) {
 	rows, err := q.db.QueryContext(ctx, getAllTasks)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Task
+	var items []GetAllTasksRow
 	for rows.Next() {
-		var i Task
+		var i GetAllTasksRow
 		if err := rows.Scan(
 			&i.TaskID,
 			&i.Description,
@@ -214,15 +234,25 @@ WHERE is_completed = 1
 ORDER BY sort
 `
 
-func (q *Queries) GetCompletedTasks(ctx context.Context) ([]Task, error) {
+type GetCompletedTasksRow struct {
+	TaskID       int64
+	Description  string
+	ProjectID    int64
+	Sort         int64
+	IsCompleted  int64
+	IsInProgress int64
+	Notes        interface{}
+}
+
+func (q *Queries) GetCompletedTasks(ctx context.Context) ([]GetCompletedTasksRow, error) {
 	rows, err := q.db.QueryContext(ctx, getCompletedTasks)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Task
+	var items []GetCompletedTasksRow
 	for rows.Next() {
-		var i Task
+		var i GetCompletedTasksRow
 		if err := rows.Scan(
 			&i.TaskID,
 			&i.Description,
@@ -252,15 +282,25 @@ WHERE is_completed = 0 AND is_in_progress = 0
 ORDER BY sort
 `
 
-func (q *Queries) GetPendingTasks(ctx context.Context) ([]Task, error) {
+type GetPendingTasksRow struct {
+	TaskID       int64
+	Description  string
+	ProjectID    int64
+	Sort         int64
+	IsCompleted  int64
+	IsInProgress int64
+	Notes        interface{}
+}
+
+func (q *Queries) GetPendingTasks(ctx context.Context) ([]GetPendingTasksRow, error) {
 	rows, err := q.db.QueryContext(ctx, getPendingTasks)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Task
+	var items []GetPendingTasksRow
 	for rows.Next() {
-		var i Task
+		var i GetPendingTasksRow
 		if err := rows.Scan(
 			&i.TaskID,
 			&i.Description,
@@ -336,9 +376,19 @@ FROM tasks
 WHERE task_id = ?
 `
 
-func (q *Queries) GetTask(ctx context.Context, taskID int64) (Task, error) {
+type GetTaskRow struct {
+	TaskID       int64
+	Description  string
+	ProjectID    int64
+	Sort         int64
+	IsCompleted  int64
+	IsInProgress int64
+	Notes        interface{}
+}
+
+func (q *Queries) GetTask(ctx context.Context, taskID int64) (GetTaskRow, error) {
 	row := q.db.QueryRowContext(ctx, getTask, taskID)
-	var i Task
+	var i GetTaskRow
 	err := row.Scan(
 		&i.TaskID,
 		&i.Description,
@@ -358,15 +408,25 @@ WHERE project_id = ?
 ORDER BY sort
 `
 
-func (q *Queries) GetTasksByProject(ctx context.Context, projectID int64) ([]Task, error) {
+type GetTasksByProjectRow struct {
+	TaskID       int64
+	Description  string
+	ProjectID    int64
+	Sort         int64
+	IsCompleted  int64
+	IsInProgress int64
+	Notes        interface{}
+}
+
+func (q *Queries) GetTasksByProject(ctx context.Context, projectID int64) ([]GetTasksByProjectRow, error) {
 	rows, err := q.db.QueryContext(ctx, getTasksByProject, projectID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Task
+	var items []GetTasksByProjectRow
 	for rows.Next() {
-		var i Task
+		var i GetTasksByProjectRow
 		if err := rows.Scan(
 			&i.TaskID,
 			&i.Description,
@@ -484,7 +544,17 @@ type UpdateTaskParams struct {
 	TaskID       int64
 }
 
-func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
+type UpdateTaskRow struct {
+	TaskID       int64
+	Description  string
+	ProjectID    int64
+	Sort         int64
+	IsCompleted  int64
+	IsInProgress int64
+	Notes        interface{}
+}
+
+func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (UpdateTaskRow, error) {
 	row := q.db.QueryRowContext(ctx, updateTask,
 		arg.Description,
 		arg.Sort,
@@ -493,7 +563,7 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		arg.Notes,
 		arg.TaskID,
 	)
-	var i Task
+	var i UpdateTaskRow
 	err := row.Scan(
 		&i.TaskID,
 		&i.Description,
@@ -535,9 +605,19 @@ type UpdateTaskStatusParams struct {
 	TaskID       int64
 }
 
-func (q *Queries) UpdateTaskStatus(ctx context.Context, arg UpdateTaskStatusParams) (Task, error) {
+type UpdateTaskStatusRow struct {
+	TaskID       int64
+	Description  string
+	ProjectID    int64
+	Sort         int64
+	IsCompleted  int64
+	IsInProgress int64
+	Notes        interface{}
+}
+
+func (q *Queries) UpdateTaskStatus(ctx context.Context, arg UpdateTaskStatusParams) (UpdateTaskStatusRow, error) {
 	row := q.db.QueryRowContext(ctx, updateTaskStatus, arg.IsCompleted, arg.IsInProgress, arg.TaskID)
-	var i Task
+	var i UpdateTaskStatusRow
 	err := row.Scan(
 		&i.TaskID,
 		&i.Description,

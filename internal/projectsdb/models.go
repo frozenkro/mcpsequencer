@@ -10,11 +10,13 @@ type Project struct {
 }
 
 type Task struct {
-	TaskID       int64
-	Description  string
-	ProjectID    int64
-	Sort         int64
-	IsCompleted  int64
-	IsInProgress int64
-	Notes        interface{}
+	TaskID           int64
+	Name             string
+	Description      string
+	ProjectID        int64
+	Sort             int64
+	DependenciesJson string
+	IsCompleted      int64
+	IsInProgress     int64
+	Notes            interface{}
 }

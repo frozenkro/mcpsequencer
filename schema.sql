@@ -5,9 +5,11 @@ CREATE TABLE projects (
 	
 CREATE TABLE tasks (
   task_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
   description TEXT NOT NULL,
   project_id INTEGER NOT NULL,
   sort INTEGER NOT NULL,
+  dependencies_json TEXT NOT NULL,
   is_completed INTEGER NOT NULL,
   is_in_progress INTEGER NOT NULL,
   notes TEXT NULL,
