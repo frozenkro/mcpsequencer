@@ -2,73 +2,11 @@ package utils
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
-	"strings"
 
 	"github.com/frozenkro/mcpsequencer/internal/models"
 	"github.com/frozenkro/mcpsequencer/internal/projectsdb"
 )
-
-type TaskUnmarshalError struct {
-	TaskJson string
-	Err      error
-}
-
-func (e *TaskUnmarshalError) Error() string {
-	return fmt.Sprintf("Error unmarshaling task '%v'\n%v", e.TaskJson, e.Err.Error())
-}
-
-type DepsMarshalError struct {
-	Deps []int
-	Err  error
-}
-
-func (e *DepsMarshalError) Error() string {
-	depsStr := strings.Join(strings.Fields(fmt.Sprint(e.Deps)), ",")
-	return fmt.Sprintf("Error marshaling dependency array '%v'\n%v", depsStr, e.Err.Error())
-}
-
-type DepsUnmarshalError struct {
-	DepsJson string
-	Err      error
-}
-
-func (e *DepsUnmarshalError) Error() string {
-	return fmt.Sprintf("Error unmarshaling dependency array '%v'\n%v", e.DepsJson, e.Err.Error())
-}
-
-type DupeSortIdError struct {
-	SortID int
-}
-
-func (e *DupeSortIdError) Error() string {
-	return fmt.Sprintf("Found duplicate sort ID %v\n", e.SortID)
-}
-
-type InvalidDependencyError struct {
-	SortID int
-}
-
-func (e *InvalidDependencyError) Error() string {
-	return fmt.Sprintf("Dependency '%v' not a valid Sort ID in this list", e.SortID)
-}
-
-type DependencyTreeParseError struct {
-	CompletedIds   []int
-	UnreachableIds []int
-}
-
-func (e *DependencyTreeParseError) Error() string {
-	completedStr := strings.Join(strings.Fields(fmt.Sprint(e.CompletedIds)), ",")
-	unreachableStr := strings.Join(strings.Fields(fmt.Sprint(e.UnreachableIds)), ",")
-
-	return fmt.Sprintf(`
-	Dependency tree cannot be walked, there is a cyclical dependency or deadlock.
-	Completed Sort IDs: %v
-	Unreachable Sort IDs: %v
-	`, completedStr, unreachableStr)
-}
 
 func IsDev() bool {
 	for _, v := range os.Args {
@@ -113,7 +51,7 @@ type minimalTask struct {
 }
 
 func newMinimalTask(t projectsdb.Task) (*minimalTask, error) {
-	depsSl := []int{}
+	depsSl := &[]int{}
 
 	if err := json.Unmarshal([]byte(t.DependenciesJson), depsSl); err != nil {
 		return nil, &DepsUnmarshalError{DepsJson: t.DependenciesJson, Err: err}
@@ -121,7 +59,7 @@ func newMinimalTask(t projectsdb.Task) (*minimalTask, error) {
 
 	return &minimalTask{
 		sort:     int(t.Sort),
-		deps:     depsSl,
+		deps:     *depsSl,
 		complete: false,
 	}, nil
 }
@@ -175,7 +113,7 @@ func ValidateTasksArray(tasks []projectsdb.Task) error {
 			}
 		}
 
-		if !anyTaskCompleted && allTasksComplete {
+		if !anyTaskCompleted && !allTasksComplete {
 
 			completedIds := []int{}
 			unreachableIds := []int{}

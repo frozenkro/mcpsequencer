@@ -17,9 +17,53 @@ func TestValidateTasksArray(t *testing.T) {
 	}
 
 	tests := []tasksTestCase{
-		tasksTestCase{},
-		tasksTestCase{},
-		tasksTestCase{},
+		tasksTestCase{
+			name: "ValidateTasksArray-NoDeps",
+			tasks: []projectsdb.Task{
+				projectsdb.Task{
+					Sort:             int64(0),
+					DependenciesJson: "[]",
+				},
+				projectsdb.Task{
+					Sort:             int64(1),
+					DependenciesJson: "[]",
+				},
+			},
+			succ: true,
+		},
+		tasksTestCase{
+			name: "ValidateTasksArray-SimpleSequence",
+			tasks: []projectsdb.Task{
+				projectsdb.Task{
+					Sort:             int64(0),
+					DependenciesJson: "[]",
+				},
+				projectsdb.Task{
+					Sort:             int64(1),
+					DependenciesJson: "[0]",
+				},
+				projectsdb.Task{
+					Sort:             int64(2),
+					DependenciesJson: "[1]",
+				},
+			},
+			succ: true,
+		},
+		tasksTestCase{
+			name: "ValidateTasksArray-Cyclical",
+			tasks: []projectsdb.Task{
+				projectsdb.Task{
+					Sort:             int64(0),
+					DependenciesJson: "[1]",
+				},
+				projectsdb.Task{
+					Sort:             int64(1),
+					DependenciesJson: "[0]",
+				},
+			},
+			succ:        false,
+			expectedErr: utils.InvalidDependencyError{},
+		},
 	}
 
 	for _, test := range tests {
@@ -29,7 +73,7 @@ func TestValidateTasksArray(t *testing.T) {
 			if test.succ {
 				assert.Nil(t, err)
 			} else {
-				assert.ErrorIs(t, test.expectedErr, err)
+				assert.ErrorAs(t, err, &test.expectedErr)
 			}
 		})
 		if !succ {

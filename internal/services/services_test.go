@@ -7,10 +7,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/frozenkro/mcpsequencer/db"
-	"github.com/frozenkro/mcpsequencer/globals"
-	"github.com/frozenkro/mcpsequencer/projectsdb"
-	"github.com/frozenkro/mcpsequencer/services"
+	"github.com/frozenkro/mcpsequencer/internal/db"
+	"github.com/frozenkro/mcpsequencer/internal/globals"
+	"github.com/frozenkro/mcpsequencer/internal/projectsdb"
+	"github.com/frozenkro/mcpsequencer/internal/services"
 	"github.com/stretchr/testify/assert"
 )
 
