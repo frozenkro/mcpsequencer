@@ -62,7 +62,7 @@ func TestValidateTasksArray(t *testing.T) {
 				},
 			},
 			succ:        false,
-			expectedErr: utils.InvalidDependencyError{},
+			expectedErr: utils.DependencyTreeParseError{},
 		},
 	}
 
@@ -73,7 +73,7 @@ func TestValidateTasksArray(t *testing.T) {
 			if test.succ {
 				assert.Nil(t, err)
 			} else {
-				assert.ErrorAs(t, err, &test.expectedErr)
+				assert.IsType(t, test.expectedErr, err)
 			}
 		})
 		if !succ {

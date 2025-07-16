@@ -23,12 +23,12 @@ func ParseTasksArray(tasks []string, projectId int) ([]projectsdb.Task, error) {
 		args := models.CreateTaskArgs{}
 
 		if err := json.Unmarshal([]byte(jsonT), args); err != nil {
-			return nil, &TaskUnmarshalError{TaskJson: jsonT, Err: err}
+			return nil, TaskUnmarshalError{TaskJson: jsonT, Err: err}
 		}
 
 		jsonDeps, err := json.Marshal(args.Dependencies)
 		if err != nil {
-			return nil, &DepsMarshalError{Deps: args.Dependencies, Err: err}
+			return nil, DepsMarshalError{Deps: args.Dependencies, Err: err}
 		}
 
 		task := projectsdb.Task{
@@ -54,7 +54,7 @@ func newMinimalTask(t projectsdb.Task) (*minimalTask, error) {
 	depsSl := &[]int{}
 
 	if err := json.Unmarshal([]byte(t.DependenciesJson), depsSl); err != nil {
-		return nil, &DepsUnmarshalError{DepsJson: t.DependenciesJson, Err: err}
+		return nil, DepsUnmarshalError{DepsJson: t.DependenciesJson, Err: err}
 	}
 
 	return &minimalTask{
@@ -74,7 +74,7 @@ func ValidateTasksArray(tasks []projectsdb.Task) error {
 		}
 
 		if _, ok := minimalTasks[mt.sort]; ok {
-			return &DupeSortIdError{SortID: mt.sort}
+			return DupeSortIdError{SortID: mt.sort}
 		}
 
 		minimalTasks[mt.sort] = mt
@@ -99,7 +99,7 @@ func ValidateTasksArray(tasks []projectsdb.Task) error {
 
 			for _, d := range t.deps {
 				if _, ok := minimalTasks[d]; !ok {
-					return &InvalidDependencyError{SortID: d}
+					return InvalidDependencyError{SortID: d}
 				}
 
 				if !minimalTasks[d].complete {
@@ -125,7 +125,7 @@ func ValidateTasksArray(tasks []projectsdb.Task) error {
 					unreachableIds = append(unreachableIds, t.sort)
 				}
 			}
-			return &DependencyTreeParseError{CompletedIds: completedIds, UnreachableIds: unreachableIds}
+			return DependencyTreeParseError{CompletedIds: completedIds, UnreachableIds: unreachableIds}
 		}
 
 		if allTasksComplete {
