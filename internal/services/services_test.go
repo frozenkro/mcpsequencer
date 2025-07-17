@@ -175,10 +175,10 @@ func TestGetTasksByProject(t *testing.T) {
 
 	_, err = conn.ExecContext(ctx,
 		`INSERT INTO tasks 
-		(description, project_id, sort, is_completed, is_in_progress)
-		VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)`,
-		taskNames[0], projectId, 0, 0, 0,
-		taskNames[1], projectId, 1, 0, 0,
+		(name, description, project_id, sort, dependencies_json, is_completed, is_in_progress)
+		VALUES (?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?)`,
+		taskNames[0], "", projectId, 0, "[]", 0, 0,
+		taskNames[1], "", projectId, 1, "[]", 0, 0,
 	)
 	assert.Nil(t, err)
 
@@ -189,9 +189,9 @@ func TestGetTasksByProject(t *testing.T) {
 	task1Found := false
 	task2Found := false
 	for _, v := range tasks {
-		if v.Description == taskNames[0] {
+		if v.Name == taskNames[0] {
 			task1Found = true
-		} else if v.Description == taskNames[1] {
+		} else if v.Name == taskNames[1] {
 			task2Found = true
 		}
 	}
