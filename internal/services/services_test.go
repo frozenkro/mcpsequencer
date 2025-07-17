@@ -25,10 +25,9 @@ func TestMain(m *testing.M) {
 	globals.InitTest()
 	os.Remove(globals.DbName)
 
-	s = services.Services{}
 	ctx = context.Background()
-
 	db.Init()
+	s = services.NewServices()
 
 	conn, err = db.DB.Conn(ctx)
 	if err != nil {

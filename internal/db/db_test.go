@@ -18,3 +18,8 @@ func TestInit(t *testing.T) {
 	}
 
 }
+
+func TestCleanup(dbFile *os.File) {
+	dbFile.Close()
+	os.Remove(globals.DbName)
+}

@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	_ "embed"
 	"encoding/json"
 	"log"
 
@@ -14,6 +15,9 @@ type Project struct {
 	Tasks []string `json:"tasks"`
 }
 
+//go:embed sqlc/schema.sql
+var SchemaSql string
+
 var DB *sql.DB
 
 func Init() {
@@ -22,33 +26,12 @@ func Init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	createProjectsTableQuery := `
-	CREATE TABLE IF NOT EXISTS projects (
-		project_id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT NOT NULL
-	);
-	`
-	createTasksTableQuery := `
-	CREATE TABLE IF NOT EXISTS tasks (
-		task_id INTEGER PRIMARY KEY AUTOINCREMENT,
-		description TEXT NOT NULL,
-		project_id INTEGER NOT NULL,
-		sort INTEGER NOT NULL,
-		is_completed INTEGER NOT NULL,
-		is_in_progress INTEGER NOT NULL,
-		notes TEXT NULL,
-		FOREIGN KEY(project_id) REFERENCES projects(project_id)
-	);
-	`
-	_, err = DB.Exec(createProjectsTableQuery)
+
+	_, err = DB.Exec(SchemaSql)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	_, err = DB.Exec(createTasksTableQuery)
-	if err != nil {
-		log.Fatal(err)
-	}
 }
 
 func InsertProject(p Project) error {
