@@ -22,7 +22,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	globals.Init(globals.Test)
+	globals.InitTest()
 	os.Remove(globals.DbName)
 
 	s = services.Services{}

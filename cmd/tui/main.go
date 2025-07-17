@@ -9,15 +9,10 @@ import (
 	"github.com/frozenkro/mcpsequencer/internal/db"
 	"github.com/frozenkro/mcpsequencer/internal/globals"
 	"github.com/frozenkro/mcpsequencer/internal/tui"
-	"github.com/frozenkro/mcpsequencer/internal/utils"
 )
 
 func main() {
-	env := globals.Prod
-	if utils.IsDev() {
-		env = globals.Dev
-	}
-	globals.Init(env)
+	globals.Init()
 
 	logger, closeLogFile, err := setupLogger()
 	if err != nil {

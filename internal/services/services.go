@@ -8,7 +8,8 @@ import (
 	"github.com/frozenkro/mcpsequencer/internal/db"
 	"github.com/frozenkro/mcpsequencer/internal/models"
 	"github.com/frozenkro/mcpsequencer/internal/projectsdb"
-	"github.com/frozenkro/mcpsequencer/internal/utils"
+	"github.com/frozenkro/mcpsequencer/internal/transformers"
+	"github.com/frozenkro/mcpsequencer/internal/validators"
 )
 
 const TaskSortLast int64 = -1
@@ -40,7 +41,7 @@ func (s *Services) CreateProject(ctx context.Context, name string, tasksJson []s
 		return err
 	}
 
-	tasks, err := utils.ParseTasksArray(tasksJson, int(p.ProjectID))
+	tasks, err := transformers.ParseTasksArray(tasksJson, int(p.ProjectID))
 
 	for _, t := range tasks {
 		task := projectsdb.CreateTaskParams{
@@ -129,7 +130,7 @@ func (s *Services) AddTask(ctx context.Context, projectId int64, args models.Cre
 		ProjectID:        projectId,
 	}
 	tasks = append(tasks, newTask)
-	utils.ValidateTasksArray(tasks)
+	validators.ValidateTasksArray(tasks)
 
 	params := projectsdb.CreateTaskParams{
 		Name:             newTask.Name,

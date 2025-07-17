@@ -9,18 +9,13 @@ import (
 	"github.com/frozenkro/mcpsequencer/internal/globals"
 	"github.com/frozenkro/mcpsequencer/internal/mcp/handlers"
 	"github.com/frozenkro/mcpsequencer/internal/mcp/tools"
-	"github.com/frozenkro/mcpsequencer/internal/utils"
 	"github.com/mark3labs/mcp-go/server"
 )
 
 var DefaultPort int = 8080
 
 func main() {
-	env := globals.Prod
-	if utils.IsDev() {
-		env = globals.Dev
-	}
-	globals.Init(env)
+	globals.Init()
 	db.Init()
 
 	// Create a new MCP server

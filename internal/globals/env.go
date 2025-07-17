@@ -2,7 +2,7 @@ package globals
 
 import "os"
 
-func IsDev() bool {
+func isDev() bool {
 	for _, v := range os.Args {
 		if v == "--dev" {
 			return true
@@ -24,7 +24,18 @@ var (
 	DbName      string
 )
 
-func Init(env Environments) {
+func Init() {
+	if isDev() {
+		initEnv(Dev)
+	} else {
+		initEnv(Prod)
+	}
+}
+func InitTest() {
+	initEnv(Test)
+}
+
+func initEnv(env Environments) {
 	Environment = env
 
 	if env == Dev {

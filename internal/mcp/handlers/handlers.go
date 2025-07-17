@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/frozenkro/mcpsequencer/internal/globals"
+	"github.com/frozenkro/mcpsequencer/internal/models"
 	"github.com/frozenkro/mcpsequencer/internal/services"
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -70,6 +71,11 @@ func AddTaskHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Call
 		return requiredParamError(globals.ProjectId, err), nil
 	}
 
+	name, err := request.RequireString(string(globals.TaskName))
+	if err != nil {
+		return requiredParamError(globals.TaskName, err), nil
+	}
+
 	description, err := request.RequireString(string(globals.Description))
 	if err != nil {
 		return requiredParamError(globals.ProjectId, err), nil
@@ -80,7 +86,18 @@ func AddTaskHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Call
 		return requiredParamError(globals.SortId, err), nil
 	}
 
-	err = svc.AddTask(ctx, int64(projectId), description, int64(sort))
+	deps, err := request.RequireIntSlice(string(globals.Dependencies))
+	if err != nil {
+		return requiredParamError(globals.SortId, err), nil
+	}
+
+	args := models.CreateTaskArgs{
+		Name:         name,
+		Description:  description,
+		SortId:       sort,
+		Dependencies: deps,
+	}
+	err = svc.AddTask(ctx, int64(projectId), args)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
