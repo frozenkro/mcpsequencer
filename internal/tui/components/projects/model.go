@@ -17,6 +17,7 @@ import (
 type Model struct {
 	List     list.Model
 	Selected *viewmodels.ProjectView
+	svc      services.Services
 }
 
 func NewModel(svc services.Services, ctx context.Context, width int, height int) (Model, error) {
@@ -37,6 +38,7 @@ func NewModel(svc services.Services, ctx context.Context, width int, height int)
 
 	return Model{
 		List: projects,
+		svc:  svc,
 	}, nil
 }
 
@@ -51,7 +53,7 @@ func createDelegate() list.DefaultDelegate {
 }
 
 // Handle project selection
-func (m *Model) SelectProject(svc services.Services, ctx context.Context) (*viewmodels.ProjectView, []list.Item, error) {
+func (m *Model) SelectProject(ctx context.Context) (*viewmodels.ProjectView, []list.Item, error) {
 	selectedItem := m.List.SelectedItem()
 	var project *viewmodels.ProjectView
 
@@ -66,7 +68,7 @@ func (m *Model) SelectProject(svc services.Services, ctx context.Context) (*view
 	m.Selected = project
 
 	// Load tasks for the selected project
-	tasksData, err := svc.GetTasksByProject(ctx, int64(project.ProjectID))
+	tasksData, err := m.svc.GetTasksByProject(ctx, int64(project.ProjectID))
 	if err != nil {
 		return project, nil, err
 	}

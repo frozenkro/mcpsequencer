@@ -8,7 +8,7 @@ import (
 )
 
 func TestInit(t *testing.T) {
-	globals.Init(globals.Test)
+	globals.InitTest()
 	Init()
 
 	file, err := os.Open(globals.DbName)

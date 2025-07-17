@@ -11,7 +11,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-var svc services.Services
+var svc services.Services = services.NewServices()
 
 func CreateProjectHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	name, err := request.RequireString(string(globals.ProjectName))

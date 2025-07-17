@@ -23,25 +23,34 @@ const (
 	StateComplete
 )
 
-type Services struct {
-	Queries *projectsdb.Queries
+type TaskArrayValidator interface {
+	Validate([]projectsdb.Task) error
+}
+type TaskArrayTransformer interface {
+	ParseFromJson([]string, int) ([]projectsdb.Task, error)
 }
 
-func (s *Services) tryInit() {
-	if s.Queries == nil {
-		s.Queries = projectsdb.New(db.DB)
-	}
+type Services struct {
+	Queries              *projectsdb.Queries
+	TaskArrayValidator   TaskArrayValidator
+	TaskArrayTransformer TaskArrayTransformer
+}
+
+func NewServices() Services {
+	s := Services{}
+	s.Queries = projectsdb.New(db.DB)
+	s.TaskArrayValidator = validators.TaskArrayValidator{}
+	s.TaskArrayTransformer = transformers.TaskArrayTransformer{}
+	return s
 }
 
 func (s *Services) CreateProject(ctx context.Context, name string, tasksJson []string) error {
-	s.tryInit()
-
 	p, err := s.Queries.CreateProject(ctx, name)
 	if err != nil {
 		return err
 	}
 
-	tasks, err := transformers.ParseTasksArray(tasksJson, int(p.ProjectID))
+	tasks, err := s.TaskArrayTransformer.ParseFromJson(tasksJson, int(p.ProjectID))
 
 	for _, t := range tasks {
 		task := projectsdb.CreateTaskParams{
@@ -59,14 +68,10 @@ func (s *Services) CreateProject(ctx context.Context, name string, tasksJson []s
 }
 
 func (s *Services) GetProjects(ctx context.Context) ([]projectsdb.Project, error) {
-	s.tryInit()
-
 	return s.Queries.GetAllProjects(ctx)
 }
 
 func (s *Services) RenameProject(ctx context.Context, projectId int64, name string) error {
-	s.tryInit()
-
 	params := projectsdb.UpdateProjectParams{
 		ProjectID: projectId,
 		Name:      name,
@@ -78,8 +83,6 @@ func (s *Services) RenameProject(ctx context.Context, projectId int64, name stri
 }
 
 func (s *Services) DeleteProject(ctx context.Context, project_id int64) error {
-	s.tryInit()
-
 	if err := s.Queries.DeleteProject(ctx, project_id); err != nil {
 		return err
 	}
@@ -87,14 +90,10 @@ func (s *Services) DeleteProject(ctx context.Context, project_id int64) error {
 }
 
 func (s *Services) GetTasksByProject(ctx context.Context, projectId int64) ([]projectsdb.Task, error) {
-	s.tryInit()
-
 	return s.Queries.GetTasksByProject(ctx, projectId)
 }
 
 func (s *Services) AddTask(ctx context.Context, projectId int64, args models.CreateTaskArgs) error {
-	s.tryInit()
-
 	newTaskDepsJson, err := json.Marshal(args.Dependencies)
 	if err != nil {
 		return fmt.Errorf("Unable to parse Dependencies array\nError: %w", err)
@@ -130,7 +129,9 @@ func (s *Services) AddTask(ctx context.Context, projectId int64, args models.Cre
 		ProjectID:        projectId,
 	}
 	tasks = append(tasks, newTask)
-	validators.ValidateTasksArray(tasks)
+	if err = s.TaskArrayValidator.Validate(tasks); err != nil {
+		return err
+	}
 
 	params := projectsdb.CreateTaskParams{
 		Name:             newTask.Name,
@@ -145,8 +146,6 @@ func (s *Services) AddTask(ctx context.Context, projectId int64, args models.Cre
 }
 
 func (s *Services) UpdateTaskState(ctx context.Context, taskId int64, state TaskState) error {
-	s.tryInit()
-
 	inProgress := 0
 	complete := 0
 	if state == StateInProgress {

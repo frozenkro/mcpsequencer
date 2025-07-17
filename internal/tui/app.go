@@ -13,7 +13,7 @@ import (
 func InitialModel(logger *log.Logger) (Model, error) {
 	tuilog.SetLogger(logger)
 	ctx := context.Background()
-	svc := services.Services{}
+	svc := services.NewServices()
 
 	width := 100 // Default width
 	height := 30 // Default height
@@ -24,7 +24,7 @@ func InitialModel(logger *log.Logger) (Model, error) {
 		return Model{}, err
 	}
 
-	tasksModel := tasks.NewModel(width, height)
+	tasksModel := tasks.NewModel(svc, width, height)
 
 	// Create main model
 	model := Model{

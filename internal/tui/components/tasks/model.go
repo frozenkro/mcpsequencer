@@ -15,14 +15,16 @@ import (
 type Model struct {
 	List     list.Model
 	Selected *viewmodels.ProjectView
+	svc      services.Services
 }
 
-func NewModel(width, height int) Model {
+func NewModel(svc services.Services, width, height int) Model {
 
 	list := list.New([]list.Item{}, createDelegate(), width, height)
 	list.Title = "Tasks"
 	return Model{
 		List: list,
+		svc:  svc,
 	}
 }
 
@@ -37,8 +39,7 @@ func createDelegate() list.DefaultDelegate {
 }
 
 func (m *Model) HandleProjectSelected(ctx context.Context, msg constants.ProjectSelectedMsg) error {
-	svc := services.Services{}
-	tasksData, err := svc.GetTasksByProject(ctx, int64(msg.ProjectID))
+	tasksData, err := m.svc.GetTasksByProject(ctx, int64(msg.ProjectID))
 	if err != nil {
 		return fmt.Errorf("Error retrieving tasks data for project %v: %w\n", err)
 	}
