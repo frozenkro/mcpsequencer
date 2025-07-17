@@ -2,9 +2,13 @@ package services
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"github.com/frozenkro/mcpsequencer/internal/db"
+	"github.com/frozenkro/mcpsequencer/internal/models"
 	"github.com/frozenkro/mcpsequencer/internal/projectsdb"
+	"github.com/frozenkro/mcpsequencer/internal/utils"
 )
 
 const TaskSortLast int64 = -1
@@ -28,7 +32,7 @@ func (s *Services) tryInit() {
 	}
 }
 
-func (s *Services) CreateProject(ctx context.Context, name string, tasks []string) error {
+func (s *Services) CreateProject(ctx context.Context, name string, tasksJson []string) error {
 	s.tryInit()
 
 	p, err := s.Queries.CreateProject(ctx, name)
@@ -36,16 +40,17 @@ func (s *Services) CreateProject(ctx context.Context, name string, tasks []strin
 		return err
 	}
 
-	for i, t := range tasks {
+	tasks, err := utils.ParseTasksArray(tasksJson, int(p.ProjectID))
+
+	for _, t := range tasks {
 		task := projectsdb.CreateTaskParams{
-			Description: t,
-			Sort:        int64(i),
+			Name:        t.Name,
+			Description: t.Description,
+			Sort:        t.Sort,
 			ProjectID:   p.ProjectID,
 		}
 		if _, err := s.Queries.CreateTask(ctx, task); err != nil {
-			// TODO either wait for all errs then return list,
-			// or implement a rollback
-			return err
+			return fmt.Errorf("Unable to insert new task '%v'\nError: %w", task.Name, err)
 		}
 	}
 
@@ -86,17 +91,22 @@ func (s *Services) GetTasksByProject(ctx context.Context, projectId int64) ([]pr
 	return s.Queries.GetTasksByProject(ctx, projectId)
 }
 
-func (s *Services) AddTask(ctx context.Context, projectId int64, task string, sort int64) error {
+func (s *Services) AddTask(ctx context.Context, projectId int64, args models.CreateTaskArgs) error {
 	s.tryInit()
 
-	if sort != TaskSortLast {
-		tasks, err := s.Queries.GetTasksByProject(ctx, projectId)
-		if err != nil {
-			return err
-		}
+	newTaskDepsJson, err := json.Marshal(args.Dependencies)
+	if err != nil {
+		return fmt.Errorf("Unable to parse Dependencies array\nError: %w", err)
+	}
 
+	tasks, err := s.Queries.GetTasksByProject(ctx, projectId)
+	if err != nil {
+		return err
+	}
+
+	if int64(args.SortId) != TaskSortLast {
 		for _, t := range tasks {
-			if t.Sort >= sort {
+			if t.Sort >= int64(args.SortId) {
 				t.Sort = t.Sort + 1
 
 				params := projectsdb.UpdateTaskSortParams{
@@ -105,19 +115,31 @@ func (s *Services) AddTask(ctx context.Context, projectId int64, task string, so
 				}
 				err := s.Queries.UpdateTaskSort(ctx, params)
 				if err != nil {
-					return err
+					return fmt.Errorf("Unable to update Sort ID to '%v' for TaskID '%v'\nError: %w", t.Sort, t.TaskID, err)
 				}
 			}
 		}
 	}
 
+	newTask := projectsdb.Task{
+		Name:             args.Name,
+		Sort:             int64(args.SortId),
+		Description:      args.Description,
+		DependenciesJson: string(newTaskDepsJson),
+		ProjectID:        projectId,
+	}
+	tasks = append(tasks, newTask)
+	utils.ValidateTasksArray(tasks)
+
 	params := projectsdb.CreateTaskParams{
-		Description: task,
-		ProjectID:   projectId,
-		Sort:        sort,
+		Name:             newTask.Name,
+		Description:      newTask.Description,
+		ProjectID:        projectId,
+		Sort:             int64(args.SortId),
+		DependenciesJson: newTask.DependenciesJson,
 	}
 
-	_, err := s.Queries.CreateTask(ctx, params)
+	_, err = s.Queries.CreateTask(ctx, params)
 	return err
 }
 

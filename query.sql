@@ -26,41 +26,41 @@ WHERE project_id = ?;
 -- Tasks CRUD Operations
 
 -- name: CreateTask :one
-INSERT INTO tasks (description, project_id, sort, is_completed, is_in_progress, notes)
-VALUES (?, ?, ?, ?, ?, ?)
-RETURNING task_id, description, project_id, sort, is_completed, is_in_progress, notes;
+INSERT INTO tasks (name, description, project_id, sort, dependencies_json, is_completed, is_in_progress, notes)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING task_id, name, description, project_id, sort, dependencies_json, is_completed, is_in_progress, notes;
 
 -- name: GetTask :one
-SELECT task_id, description, project_id, sort, is_completed, is_in_progress, notes
+SELECT task_id, name, description, project_id, sort, dependencies_json, is_completed, is_in_progress, notes
 FROM tasks
 WHERE task_id = ?;
 
 -- name: GetAllTasks :many
-SELECT task_id, description, project_id, sort, is_completed, is_in_progress, notes
+SELECT task_id, name, description, project_id, sort, dependencies_json, is_completed, is_in_progress, notes
 FROM tasks
 ORDER BY sort;
 
 -- name: GetTasksByProject :many
-SELECT task_id, description, project_id, sort, is_completed, is_in_progress, notes
+SELECT task_id, name, description, project_id, sort, dependencies_json, is_completed, is_in_progress, notes
 FROM tasks
 WHERE project_id = ?
 ORDER BY sort;
 
 -- name: GetCompletedTasks :many
-SELECT task_id, description, project_id, sort, is_completed, is_in_progress, notes
+SELECT task_id, name, description, project_id, sort, dependencies_json, is_completed, is_in_progress, notes
 FROM tasks
 WHERE is_completed = 1
 ORDER BY sort;
 
 -- name: GetPendingTasks :many
-SELECT task_id, description, project_id, sort, is_completed, is_in_progress, notes
+SELECT task_id, name, description, project_id, sort, dependencies_json, is_completed, is_in_progress, notes
 FROM tasks
 WHERE is_completed = 0 AND is_in_progress = 0
 ORDER BY sort;
 
 -- name: UpdateTask :one
 UPDATE tasks
-SET description = ?, sort = ?, is_completed = ?, is_in_progress = ?, notes = ?
+SET name = ?, description = ?, sort = ?, dependencies_json = ?, is_completed = ?, is_in_progress = ?, notes = ?
 WHERE task_id = ?
 RETURNING task_id, description, project_id, sort, is_completed, is_in_progress, notes;
 
@@ -68,7 +68,7 @@ RETURNING task_id, description, project_id, sort, is_completed, is_in_progress, 
 UPDATE tasks
 SET is_completed = ?, is_in_progress = ?
 WHERE task_id = ?
-RETURNING task_id, description, project_id, sort, is_completed, is_in_progress, notes;
+RETURNING task_id, name, description, project_id, sort, dependencies_json, is_completed, is_in_progress, notes;
 
 -- name: UpdateTaskSort :exec
 UPDATE tasks
@@ -88,9 +88,11 @@ WHERE project_id = ?;
 -- name: GetTasksWithProject :many
 SELECT 
     t.task_id,
+    t.name,
     t.description,
     t.project_id,
     t.sort,
+    t.dependencies_json,
     t.is_completed,
     t.is_in_progress,
     t.notes,

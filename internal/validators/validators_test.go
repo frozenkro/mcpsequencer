@@ -1,10 +1,10 @@
-package utils_test
+package validators_test
 
 import (
 	"testing"
 
 	"github.com/frozenkro/mcpsequencer/internal/projectsdb"
-	"github.com/frozenkro/mcpsequencer/internal/utils"
+	"github.com/frozenkro/mcpsequencer/internal/validators"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -62,13 +62,13 @@ func TestValidateTasksArray(t *testing.T) {
 				},
 			},
 			succ:        false,
-			expectedErr: utils.DependencyTreeParseError{},
+			expectedErr: validators.DependencyTreeParseError{},
 		},
 	}
 
 	for _, test := range tests {
 		succ := t.Run(test.name, func(t *testing.T) {
-			err := utils.ValidateTasksArray(test.tasks)
+			err := validators.ValidateTasksArray(test.tasks)
 
 			if test.succ {
 				assert.Nil(t, err)
