@@ -41,7 +41,7 @@ func createDelegate() list.DefaultDelegate {
 func (m *Model) HandleProjectSelected(ctx context.Context, msg constants.ProjectSelectedMsg) error {
 	tasksData, err := m.svc.GetTasksByProject(ctx, int64(msg.ProjectID))
 	if err != nil {
-		return fmt.Errorf("Error retrieving tasks data for project %v: %w\n", err)
+		return fmt.Errorf("Error retrieving tasks data for project %v: %w\n", msg.ProjectID, err)
 	}
 
 	l := []list.Item{}

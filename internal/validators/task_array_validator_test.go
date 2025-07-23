@@ -66,9 +66,11 @@ func TestValidateTasksArray(t *testing.T) {
 		},
 	}
 
+	sut := validators.TaskArrayValidator{}
+
 	for _, test := range tests {
 		succ := t.Run(test.name, func(t *testing.T) {
-			err := validators.ValidateTasksArray(test.tasks)
+			err := sut.Validate(test.tasks)
 
 			if test.succ {
 				assert.Nil(t, err)

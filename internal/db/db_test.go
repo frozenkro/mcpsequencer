@@ -12,14 +12,14 @@ func TestInit(t *testing.T) {
 	Init()
 
 	file, err := os.Open(globals.DbName)
-	defer file.Close()
+	defer teardown(file)
 	if err != nil {
 		t.Errorf("error opening db file: \n%v\n", err)
 	}
 
 }
 
-func TestCleanup(dbFile *os.File) {
+func teardown(dbFile *os.File) {
 	dbFile.Close()
 	os.Remove(globals.DbName)
 }
