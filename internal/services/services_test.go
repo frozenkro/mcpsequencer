@@ -3,12 +3,14 @@ package services_test
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"log"
 	"os"
 	"testing"
 
 	"github.com/frozenkro/mcpsequencer/internal/db"
 	"github.com/frozenkro/mcpsequencer/internal/globals"
+	"github.com/frozenkro/mcpsequencer/internal/models"
 	"github.com/frozenkro/mcpsequencer/internal/projectsdb"
 	"github.com/frozenkro/mcpsequencer/internal/services"
 	"github.com/stretchr/testify/assert"
@@ -40,9 +42,27 @@ func TestMain(m *testing.M) {
 
 func TestCreateProject(t *testing.T) {
 	projectName := "Test Project Name"
-	tasks := []string{"Test task 1", "Test task 2"}
+	tasks := []models.CreateTaskArgs{
+		models.CreateTaskArgs{
+			Name:         "Test task 1",
+			Description:  "Test task 1 description",
+			SortId:       0,
+			Dependencies: []int{},
+		},
+		models.CreateTaskArgs{
+			Name:         "Test task 2",
+			Description:  "Test task 2 description",
+			SortId:       1,
+			Dependencies: []int{0},
+		},
+	}
 
-	err := s.CreateProject(ctx, projectName, tasks)
+	tasksStr, err := json.Marshal(tasks)
+	if err != nil {
+		t.Fatalf("Error creating test data for TestCreateProject: \n%v\n", err.Error())
+	}
+
+	err = s.CreateProject(ctx, projectName, string(tasksStr))
 	assert.Nil(t, err)
 
 	rows, err := conn.QueryContext(ctx, "SELECT project_id, name FROM projects WHERE Name = ?", projectName)
@@ -59,19 +79,26 @@ func TestCreateProject(t *testing.T) {
 
 	rows, err = conn.QueryContext(ctx, `
 		SELECT task_id, 
+		name,
 		description,
 		sort
 		FROM tasks
 		WHERE project_id = ?
 	`, p.ProjectID)
 
+	rowCount := 0
 	for rows.Next() {
 		task := projectsdb.Task{}
-		err = rows.Scan(&task.TaskID, &task.Description, &task.Sort)
+		err = rows.Scan(&task.TaskID, &task.Name, &task.Description, &task.Sort)
 		assert.Nil(t, err)
 
-		assert.Equal(t, tasks[task.Sort], task.Description)
+		assert.Equal(t, tasks[task.Sort].Name, task.Name)
+		assert.Equal(t, tasks[task.Sort].Description, task.Description)
+		assert.Equal(t, tasks[task.Sort].SortId, int(task.Sort))
+		rowCount = rowCount + 1
 	}
+
+	assert.Equal(t, len(tasks), rowCount)
 }
 
 func TestGetProjects(t *testing.T) {

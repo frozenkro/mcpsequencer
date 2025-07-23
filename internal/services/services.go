@@ -27,7 +27,7 @@ type TaskArrayValidator interface {
 	Validate([]projectsdb.Task) error
 }
 type TaskArrayTransformer interface {
-	ParseFromJson([]string, int) ([]projectsdb.Task, error)
+	ParseFromJson(string, int) ([]projectsdb.Task, error)
 }
 
 type Services struct {
@@ -44,7 +44,7 @@ func NewServices() Services {
 	return s
 }
 
-func (s *Services) CreateProject(ctx context.Context, name string, tasksJson []string) error {
+func (s *Services) CreateProject(ctx context.Context, name string, tasksJson string) error {
 	p, err := s.Queries.CreateProject(ctx, name)
 	if err != nil {
 		return err

@@ -9,25 +9,25 @@ import (
 
 type TaskArrayTransformer struct{}
 
-func (t TaskArrayTransformer) ParseFromJson(tasks []string, projectId int) ([]projectsdb.Task, error) {
+func (t TaskArrayTransformer) ParseFromJson(tasks string, projectId int) ([]projectsdb.Task, error) {
+	argsSl := []models.CreateTaskArgs{}
+	if err := json.Unmarshal([]byte(tasks), &argsSl); err != nil {
+		return nil, TasksUnmarshalError{}
+	}
+
 	result := []projectsdb.Task{}
-	for _, jsonT := range tasks {
-		args := models.CreateTaskArgs{}
+	for _, taskArgs := range argsSl {
 
-		if err := json.Unmarshal([]byte(jsonT), args); err != nil {
-			return nil, TaskUnmarshalError{TaskJson: jsonT, Err: err}
-		}
-
-		jsonDeps, err := json.Marshal(args.Dependencies)
+		jsonDeps, err := json.Marshal(taskArgs.Dependencies)
 		if err != nil {
-			return nil, DepsMarshalError{Deps: args.Dependencies, Err: err}
+			return nil, DepsMarshalError{Deps: taskArgs.Dependencies, Err: err}
 		}
 
 		task := projectsdb.Task{
 			ProjectID:        int64(projectId),
-			Name:             args.Name,
-			Description:      args.Description,
-			Sort:             int64(args.SortId),
+			Name:             taskArgs.Name,
+			Description:      taskArgs.Description,
+			Sort:             int64(taskArgs.SortId),
 			DependenciesJson: string(jsonDeps),
 		}
 

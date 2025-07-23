@@ -5,13 +5,13 @@ import (
 	"strings"
 )
 
-type TaskUnmarshalError struct {
-	TaskJson string
-	Err      error
+type TasksUnmarshalError struct {
+	TasksJson string
+	Err       error
 }
 
-func (e TaskUnmarshalError) Error() string {
-	return fmt.Sprintf("Error unmarshaling task '%v'\n%v", e.TaskJson, e.Err.Error())
+func (e TasksUnmarshalError) Error() string {
+	return fmt.Sprintf("Error unmarshaling tasks '%v'\n%v", e.TasksJson, e.Err.Error())
 }
 
 type DepsMarshalError struct {

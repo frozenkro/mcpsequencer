@@ -25,7 +25,8 @@ func (h *Handlers) CreateProjectHandler(ctx context.Context, request mcp.CallToo
 		return requiredParamError(globals.ProjectName, err), nil
 	}
 
-	tasks, err := request.RequireStringSlice(string(globals.Tasks))
+	// tasks, err := request.RequireStringSlice(string(globals.Tasks))
+	tasks, err := request.RequireString(string(globals.Tasks))
 	if err != nil {
 		return requiredParamError(globals.Tasks, err), nil
 	}
@@ -175,12 +176,12 @@ Tasks should be defined in json, with the goal of being as parallelizable as pos
 Tasks are defined as follows:
 {
 	name: string,
-	description: string, // Include a detailed description of the task
+	description: string, // Include a detailed, markdown-formatted description of the task
 	sortId: int, // Used for visually ordering tasks and as a FK for dependencies
 	dependencies: []int // the sortIds of any tasks that must be completed before this task.
 }
 
-You should return a json array of 'Task' items.
+You should pass a json array of 'Task' items.
 	`
 	return mcp.NewToolResultText(instructions), nil
 }
