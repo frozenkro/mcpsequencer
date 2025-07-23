@@ -1,6 +1,7 @@
 package db
 
 import (
+	"log"
 	"os"
 	"testing"
 
@@ -8,7 +9,9 @@ import (
 )
 
 func TestInit(t *testing.T) {
-	globals.InitTest()
+	if err := globals.InitTest(); err != nil {
+		log.Fatalf("Application Initialization failed. \nError: %v\n", err.Error())
+	}
 	Init()
 
 	file, err := os.Open(globals.DbName)

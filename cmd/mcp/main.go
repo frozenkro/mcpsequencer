@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 
@@ -15,7 +16,9 @@ import (
 var DefaultPort int = 8080
 
 func main() {
-	globals.Init()
+	if err := globals.Init(); err != nil {
+		log.Fatalf("Application Initialization failed. \nError: %v\n", err.Error())
+	}
 	db.Init()
 
 	// Create a new MCP server
@@ -35,20 +38,20 @@ func main() {
 	s.AddTool(tools.GetTasksTool, handlers.GetTasksHandler)
 
 	if http, port := isHTTP(); http {
-		fmt.Printf("Starting HTTP Server...")
+		log.Printf("Starting HTTP Server...")
 
 		httpServer := server.NewStreamableHTTPServer(s)
 
 		portStr := fmt.Sprintf(":%v", port)
 		if err := httpServer.Start(portStr); err != nil {
-			fmt.Printf("HTTP Server error: %v\n", err)
+			log.Printf("HTTP Server error: %v\n", err)
 		}
 
 	} else {
-		fmt.Printf("Starting Stdio Server...")
+		log.Printf("Starting Stdio Server...")
 
 		if err := server.ServeStdio(s); err != nil {
-			fmt.Printf("Stdio Server error: %v\n", err)
+			log.Printf("Stdio Server error: %v\n", err)
 		}
 	}
 }

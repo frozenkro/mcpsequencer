@@ -12,7 +12,9 @@ import (
 )
 
 func main() {
-	globals.Init()
+	if err := globals.Init(); err != nil {
+		log.Fatalf("Application Initialization failed. \nError: %v\n", err.Error())
+	}
 
 	logger, closeLogFile, err := setupLogger()
 	if err != nil {
