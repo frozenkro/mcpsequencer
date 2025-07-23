@@ -1,23 +1,25 @@
 -- name: CreateProject :one
-INSERT INTO projects (name)
-VALUES (?)
-RETURNING project_id, name;
+INSERT INTO projects (name, description, absolute_path)
+VALUES (?, ?, ?)
+RETURNING project_id, name, description, absolute_path;
 
 -- name: GetProject :one
-SELECT project_id, name
+SELECT project_id, name, description, absolute_path
 FROM projects
 WHERE project_id = ?;
 
 -- name: GetAllProjects :many
-SELECT project_id, name
+SELECT project_id, name, description, absolute_path
 FROM projects
 ORDER BY name;
 
 -- name: UpdateProject :one
 UPDATE projects
-SET name = ?
+SET name = ?,
+description = ?,
+absolute_path = ?
 WHERE project_id = ?
-RETURNING project_id, name;
+RETURNING project_id, name, description, absolute_path;
 
 -- name: DeleteProject :exec
 DELETE FROM projects
@@ -83,8 +85,6 @@ WHERE task_id = ?;
 DELETE FROM tasks
 WHERE project_id = ?;
 
--- Joined queries for richer data
-
 -- name: GetTasksWithProject :many
 SELECT 
     t.task_id,
@@ -105,6 +105,8 @@ ORDER BY p.name, t.sort;
 SELECT 
     p.project_id,
     p.name,
+    p.description,
+    p.absolute_path,
     COUNT(t.task_id) as task_count,
     COUNT(CASE WHEN t.is_completed = 1 THEN 1 END) as completed_count,
     COUNT(CASE WHEN t.is_in_progress = 1 THEN 1 END) as failed_count
@@ -117,6 +119,8 @@ GROUP BY p.project_id, p.name;
 SELECT 
     p.project_id,
     p.name,
+    p.description,
+    p.absolute_path,
     COUNT(t.task_id) as task_count,
     COUNT(CASE WHEN t.is_completed = 1 THEN 1 END) as completed_count,
     COUNT(CASE WHEN t.is_in_progress = 1 THEN 1 END) as failed_count

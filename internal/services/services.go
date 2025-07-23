@@ -44,13 +44,18 @@ func NewServices() Services {
 	return s
 }
 
-func (s *Services) CreateProject(ctx context.Context, name string, tasksJson string) error {
-	p, err := s.Queries.CreateProject(ctx, name)
+func (s *Services) CreateProject(ctx context.Context, args models.CreateProjectArgs) error {
+	params := projectsdb.CreateProjectParams{
+		Name:         args.Name,
+		Description:  args.Description,
+		AbsolutePath: args.Directory,
+	}
+	p, err := s.Queries.CreateProject(ctx, params)
 	if err != nil {
 		return err
 	}
 
-	tasks, err := s.TaskArrayTransformer.ParseFromJson(tasksJson, int(p.ProjectID))
+	tasks, err := s.TaskArrayTransformer.ParseFromJson(args.TasksJson, int(p.ProjectID))
 
 	for _, t := range tasks {
 		task := projectsdb.CreateTaskParams{
@@ -71,10 +76,12 @@ func (s *Services) GetProjects(ctx context.Context) ([]projectsdb.Project, error
 	return s.Queries.GetAllProjects(ctx)
 }
 
-func (s *Services) RenameProject(ctx context.Context, projectId int64, name string) error {
+func (s *Services) UpdateProject(ctx context.Context, args models.UpdateProjectArgs) error {
 	params := projectsdb.UpdateProjectParams{
-		ProjectID: projectId,
-		Name:      name,
+		ProjectID:    int64(args.ProjectId),
+		Name:         args.Fields.Name,
+		Description:  args.Fields.Description,
+		AbsolutePath: args.Fields.Directory,
 	}
 	if _, err := s.Queries.UpdateProject(ctx, params); err != nil {
 		return err
@@ -82,8 +89,8 @@ func (s *Services) RenameProject(ctx context.Context, projectId int64, name stri
 	return nil
 }
 
-func (s *Services) DeleteProject(ctx context.Context, project_id int64) error {
-	if err := s.Queries.DeleteProject(ctx, project_id); err != nil {
+func (s *Services) DeleteProject(ctx context.Context, projectId int64) error {
+	if err := s.Queries.DeleteProject(ctx, projectId); err != nil {
 		return err
 	}
 	return nil

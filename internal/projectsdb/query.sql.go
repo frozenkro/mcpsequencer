@@ -10,15 +10,26 @@ import (
 )
 
 const createProject = `-- name: CreateProject :one
-INSERT INTO projects (name)
-VALUES (?)
-RETURNING project_id, name
+INSERT INTO projects (name, description, absolute_path)
+VALUES (?, ?, ?)
+RETURNING project_id, name, description, absolute_path
 `
 
-func (q *Queries) CreateProject(ctx context.Context, name string) (Project, error) {
-	row := q.db.QueryRowContext(ctx, createProject, name)
+type CreateProjectParams struct {
+	Name         string
+	Description  interface{}
+	AbsolutePath interface{}
+}
+
+func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error) {
+	row := q.db.QueryRowContext(ctx, createProject, arg.Name, arg.Description, arg.AbsolutePath)
 	var i Project
-	err := row.Scan(&i.ProjectID, &i.Name)
+	err := row.Scan(
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.AbsolutePath,
+	)
 	return i, err
 }
 
@@ -98,7 +109,7 @@ func (q *Queries) DeleteTasksByProject(ctx context.Context, projectID int64) err
 }
 
 const getAllProjects = `-- name: GetAllProjects :many
-SELECT project_id, name
+SELECT project_id, name, description, absolute_path
 FROM projects
 ORDER BY name
 `
@@ -112,7 +123,12 @@ func (q *Queries) GetAllProjects(ctx context.Context) ([]Project, error) {
 	var items []Project
 	for rows.Next() {
 		var i Project
-		if err := rows.Scan(&i.ProjectID, &i.Name); err != nil {
+		if err := rows.Scan(
+			&i.ProjectID,
+			&i.Name,
+			&i.Description,
+			&i.AbsolutePath,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -130,6 +146,8 @@ const getAllProjectsWithTaskCounts = `-- name: GetAllProjectsWithTaskCounts :man
 SELECT 
     p.project_id,
     p.name,
+    p.description,
+    p.absolute_path,
     COUNT(t.task_id) as task_count,
     COUNT(CASE WHEN t.is_completed = 1 THEN 1 END) as completed_count,
     COUNT(CASE WHEN t.is_in_progress = 1 THEN 1 END) as failed_count
@@ -142,6 +160,8 @@ ORDER BY p.name
 type GetAllProjectsWithTaskCountsRow struct {
 	ProjectID      int64
 	Name           string
+	Description    interface{}
+	AbsolutePath   interface{}
 	TaskCount      int64
 	CompletedCount int64
 	FailedCount    int64
@@ -159,6 +179,8 @@ func (q *Queries) GetAllProjectsWithTaskCounts(ctx context.Context) ([]GetAllPro
 		if err := rows.Scan(
 			&i.ProjectID,
 			&i.Name,
+			&i.Description,
+			&i.AbsolutePath,
 			&i.TaskCount,
 			&i.CompletedCount,
 			&i.FailedCount,
@@ -296,7 +318,7 @@ func (q *Queries) GetPendingTasks(ctx context.Context) ([]Task, error) {
 }
 
 const getProject = `-- name: GetProject :one
-SELECT project_id, name
+SELECT project_id, name, description, absolute_path
 FROM projects
 WHERE project_id = ?
 `
@@ -304,7 +326,12 @@ WHERE project_id = ?
 func (q *Queries) GetProject(ctx context.Context, projectID int64) (Project, error) {
 	row := q.db.QueryRowContext(ctx, getProject, projectID)
 	var i Project
-	err := row.Scan(&i.ProjectID, &i.Name)
+	err := row.Scan(
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.AbsolutePath,
+	)
 	return i, err
 }
 
@@ -312,6 +339,8 @@ const getProjectWithTaskCount = `-- name: GetProjectWithTaskCount :one
 SELECT 
     p.project_id,
     p.name,
+    p.description,
+    p.absolute_path,
     COUNT(t.task_id) as task_count,
     COUNT(CASE WHEN t.is_completed = 1 THEN 1 END) as completed_count,
     COUNT(CASE WHEN t.is_in_progress = 1 THEN 1 END) as failed_count
@@ -324,6 +353,8 @@ GROUP BY p.project_id, p.name
 type GetProjectWithTaskCountRow struct {
 	ProjectID      int64
 	Name           string
+	Description    interface{}
+	AbsolutePath   interface{}
 	TaskCount      int64
 	CompletedCount int64
 	FailedCount    int64
@@ -335,6 +366,8 @@ func (q *Queries) GetProjectWithTaskCount(ctx context.Context, projectID int64) 
 	err := row.Scan(
 		&i.ProjectID,
 		&i.Name,
+		&i.Description,
+		&i.AbsolutePath,
 		&i.TaskCount,
 		&i.CompletedCount,
 		&i.FailedCount,
@@ -406,7 +439,6 @@ func (q *Queries) GetTasksByProject(ctx context.Context, projectID int64) ([]Tas
 }
 
 const getTasksWithProject = `-- name: GetTasksWithProject :many
-
 SELECT 
     t.task_id,
     t.name,
@@ -436,7 +468,6 @@ type GetTasksWithProjectRow struct {
 	ProjectName      string
 }
 
-// Joined queries for richer data
 func (q *Queries) GetTasksWithProject(ctx context.Context) ([]GetTasksWithProjectRow, error) {
 	rows, err := q.db.QueryContext(ctx, getTasksWithProject)
 	if err != nil {
@@ -473,20 +504,34 @@ func (q *Queries) GetTasksWithProject(ctx context.Context) ([]GetTasksWithProjec
 
 const updateProject = `-- name: UpdateProject :one
 UPDATE projects
-SET name = ?
+SET name = ?,
+description = ?,
+absolute_path = ?
 WHERE project_id = ?
-RETURNING project_id, name
+RETURNING project_id, name, description, absolute_path
 `
 
 type UpdateProjectParams struct {
-	Name      string
-	ProjectID int64
+	Name         string
+	Description  interface{}
+	AbsolutePath interface{}
+	ProjectID    int64
 }
 
 func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error) {
-	row := q.db.QueryRowContext(ctx, updateProject, arg.Name, arg.ProjectID)
+	row := q.db.QueryRowContext(ctx, updateProject,
+		arg.Name,
+		arg.Description,
+		arg.AbsolutePath,
+		arg.ProjectID,
+	)
 	var i Project
-	err := row.Scan(&i.ProjectID, &i.Name)
+	err := row.Scan(
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.AbsolutePath,
+	)
 	return i, err
 }
 

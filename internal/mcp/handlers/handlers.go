@@ -25,13 +25,26 @@ func (h *Handlers) CreateProjectHandler(ctx context.Context, request mcp.CallToo
 		return requiredParamError(globals.ProjectName, err), nil
 	}
 
-	// tasks, err := request.RequireStringSlice(string(globals.Tasks))
+	description, err := request.RequireString(string(globals.ProjectDesc))
+	if err != nil {
+		return requiredParamError(globals.ProjectName, err), nil
+	}
+
+	dir := request.GetString(string(globals.ProjectDir), "")
+
 	tasks, err := request.RequireString(string(globals.Tasks))
 	if err != nil {
 		return requiredParamError(globals.Tasks, err), nil
 	}
 
-	err = h.svc.CreateProject(ctx, name, tasks)
+	args := models.CreateProjectArgs{
+		Name:        name,
+		Description: description,
+		Directory:   dir,
+		TasksJson:   tasks,
+	}
+
+	err = h.svc.CreateProject(ctx, args)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -39,7 +52,7 @@ func (h *Handlers) CreateProjectHandler(ctx context.Context, request mcp.CallToo
 	return mcp.NewToolResultText(fmt.Sprintf("Project %s created successfully!", name)), nil
 }
 
-func (h *Handlers) RenameProjectHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *Handlers) UpdateProjectHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	projectId, err := request.RequireInt(string(globals.ProjectId))
 	if err != nil {
 		return requiredParamError(globals.ProjectId, err), nil
@@ -50,12 +63,28 @@ func (h *Handlers) RenameProjectHandler(ctx context.Context, request mcp.CallToo
 		return requiredParamError(globals.ProjectName, err), nil
 	}
 
-	err = h.svc.RenameProject(ctx, int64(projectId), name)
+	description, err := request.RequireString(string(globals.ProjectDesc))
+	if err != nil {
+		return requiredParamError(globals.ProjectName, err), nil
+	}
+
+	dir := request.GetString(string(globals.ProjectDir), "")
+
+	args := models.UpdateProjectArgs{
+		ProjectId: projectId,
+		Fields: models.CreateProjectArgs{
+			Name:        name,
+			Description: description,
+			Directory:   dir,
+		},
+	}
+
+	err = h.svc.UpdateProject(ctx, args)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	return mcp.NewToolResultText("Project renamed successfully!"), nil
+	return mcp.NewToolResultText(fmt.Sprintf("Project %v updated successfully!", projectId)), nil
 }
 
 func (h *Handlers) DeleteProjectHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {

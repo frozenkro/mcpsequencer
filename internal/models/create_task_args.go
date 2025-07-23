@@ -6,3 +6,8 @@ type CreateTaskArgs struct {
 	SortId       int    `json:"sortId"`
 	Dependencies []int  `json:"dependencies"`
 }
+
+type UpdateTaskArgs struct {
+	TaskId int
+	Fields CreateTaskArgs
+}

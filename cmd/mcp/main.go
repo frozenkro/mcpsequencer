@@ -30,7 +30,7 @@ func main() {
 	)
 
 	s.AddTool(tools.CreateProjectTool, h.CreateProjectHandler)
-	s.AddTool(tools.RenameProjectTool, h.RenameProjectHandler)
+	s.AddTool(tools.UpdateProjectTool, h.UpdateProjectHandler)
 	s.AddTool(tools.DeleteProjectTool, h.DeleteProjectHandler)
 	s.AddTool(tools.AddTaskTool, h.AddTaskHandler)
 	s.AddTool(tools.BeginTaskTool, h.BeginTaskHandler)

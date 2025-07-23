@@ -41,7 +41,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreateProject(t *testing.T) {
-	projectName := "Test Project Name"
+	createProjectArgs := models.CreateProjectArgs{
+		Name:        "Test Project Name",
+		Description: "Test Project Description",
+		Directory:   "/path/to/project",
+	}
 	tasks := []models.CreateTaskArgs{
 		models.CreateTaskArgs{
 			Name:         "Test task 1",
@@ -62,10 +66,12 @@ func TestCreateProject(t *testing.T) {
 		t.Fatalf("Error creating test data for TestCreateProject: \n%v\n", err.Error())
 	}
 
-	err = s.CreateProject(ctx, projectName, string(tasksStr))
+	createProjectArgs.TasksJson = string(tasksStr)
+
+	err = s.CreateProject(ctx, createProjectArgs)
 	assert.Nil(t, err)
 
-	rows, err := conn.QueryContext(ctx, "SELECT project_id, name FROM projects WHERE Name = ?", projectName)
+	rows, err := conn.QueryContext(ctx, "SELECT project_id, name FROM projects WHERE Name = ?", createProjectArgs.Name)
 	assert.Nil(t, err)
 
 	p := projectsdb.Project{}
@@ -75,7 +81,7 @@ func TestCreateProject(t *testing.T) {
 
 	assert.False(t, rows.Next())
 
-	assert.Equal(t, projectName, p.Name)
+	assert.Equal(t, createProjectArgs.Name, p.Name)
 
 	rows, err = conn.QueryContext(ctx, `
 		SELECT task_id, 
@@ -134,34 +140,55 @@ func TestGetProjects(t *testing.T) {
 	assert.True(t, project2Found)
 }
 
-func TestRenameProject(t *testing.T) {
-	oldName := "BeforeRenameTest"
-	newName := "AfterRenameTest"
+func TestUpdateProject(t *testing.T) {
+	oldProject := projectsdb.Project{
+		Name:         "BeforeUpdateName",
+		Description:  "BeforeUpdateDesc",
+		AbsolutePath: "BeforeUpdatePath",
+	}
+	newProject := projectsdb.Project{
+		Name:         "AfterUpdateName",
+		Description:  "AfterUpdateDesc",
+		AbsolutePath: "AfterUpdatePath",
+	}
 
 	res, err := conn.ExecContext(ctx, `
-		INSERT INTO projects (Name)
-		VALUES (?)
+		INSERT INTO projects (name, description, absolute_path)
+		VALUES (?, ?, ?)
 		`,
-		oldName,
+		oldProject.Name,
+		oldProject.Description,
+		oldProject.AbsolutePath,
 	)
 	assert.Nil(t, err)
 
 	projectId, err := res.LastInsertId()
 	assert.Nil(t, err)
 
-	err = s.RenameProject(ctx, projectId, newName)
+	updateProjectArgs := models.UpdateProjectArgs{
+		ProjectId: int(projectId),
+		Fields: models.CreateProjectArgs{
+			Name:        newProject.Name,
+			Description: newProject.Description.(string),
+			Directory:   newProject.AbsolutePath.(string),
+		},
+	}
+
+	err = s.UpdateProject(ctx, updateProjectArgs)
 	assert.Nil(t, err)
 
 	row := conn.QueryRowContext(ctx,
-		"SELECT project_id, name FROM projects WHERE project_id = ?",
+		"SELECT project_id, name, description, absolute_path FROM projects WHERE project_id = ?",
 		projectId,
 	)
 	p := projectsdb.Project{}
-	err = row.Scan(&p.ProjectID, &p.Name)
+	err = row.Scan(&p.ProjectID, &p.Name, &p.Description, &p.AbsolutePath)
 
 	assert.Nil(t, err)
 
-	assert.Equal(t, newName, p.Name)
+	assert.Equal(t, newProject.Name, p.Name)
+	assert.Equal(t, newProject.Description, p.Description)
+	assert.Equal(t, newProject.AbsolutePath, p.AbsolutePath)
 }
 
 func TestDeleteProject(t *testing.T) {

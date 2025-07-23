@@ -1,6 +1,8 @@
 CREATE TABLE IF NOT EXISTS projects (
   project_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE
+  name TEXT NOT NULL UNIQUE,
+  description TEXT NULL,
+  absolute_path TEXT NULL
 );
 	
 CREATE TABLE IF NOT EXISTS tasks (

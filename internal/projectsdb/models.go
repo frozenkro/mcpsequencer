@@ -5,8 +5,10 @@
 package projectsdb
 
 type Project struct {
-	ProjectID int64
-	Name      string
+	ProjectID    int64
+	Name         string
+	Description  interface{}
+	AbsolutePath interface{}
 }
 
 type Task struct {
