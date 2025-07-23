@@ -162,8 +162,8 @@ func GetTasksHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Cal
 	return mcp.NewToolResultText(string(tasksJson)), nil
 }
 
-func GetTaskListInstructionsHandler() string {
-	return `
+func GetTaskListInstructionsHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	instructions := `
 Tasks should be defined in json, with the goal of being as parallelizable as possible.
 
 Tasks are defined as follows:
@@ -176,6 +176,7 @@ Tasks are defined as follows:
 
 You should return a json array of 'Task' items.
 	`
+	return mcp.NewToolResultText(instructions), nil
 }
 
 func requiredParamError(param globals.McpArg, err error) *mcp.CallToolResult {

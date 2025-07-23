@@ -36,6 +36,7 @@ func main() {
 	s.AddTool(tools.CompleteTaskTool, handlers.CompleteTaskHandler)
 	s.AddTool(tools.GetProjectsTool, handlers.GetProjectsHandler)
 	s.AddTool(tools.GetTasksTool, handlers.GetTasksHandler)
+	s.AddTool(tools.GetTaskListInstructionsTool, handlers.GetTaskListInstructionsHandler)
 
 	if http, port := isHTTP(); http {
 		log.Printf("Starting HTTP Server...")
