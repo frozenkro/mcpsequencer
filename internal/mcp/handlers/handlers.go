@@ -11,9 +11,15 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-var svc services.Services = services.NewServices()
+type Handlers struct {
+	svc services.Services
+}
 
-func CreateProjectHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func NewHandlers() *Handlers {
+	return &Handlers{svc: services.NewServices()}
+}
+
+func (h *Handlers) CreateProjectHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	name, err := request.RequireString(string(globals.ProjectName))
 	if err != nil {
 		return requiredParamError(globals.ProjectName, err), nil
@@ -24,7 +30,7 @@ func CreateProjectHandler(ctx context.Context, request mcp.CallToolRequest) (*mc
 		return requiredParamError(globals.Tasks, err), nil
 	}
 
-	err = svc.CreateProject(ctx, name, tasks)
+	err = h.svc.CreateProject(ctx, name, tasks)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -32,7 +38,7 @@ func CreateProjectHandler(ctx context.Context, request mcp.CallToolRequest) (*mc
 	return mcp.NewToolResultText(fmt.Sprintf("Project %s created successfully!", name)), nil
 }
 
-func RenameProjectHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *Handlers) RenameProjectHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	projectId, err := request.RequireInt(string(globals.ProjectId))
 	if err != nil {
 		return requiredParamError(globals.ProjectId, err), nil
@@ -43,7 +49,7 @@ func RenameProjectHandler(ctx context.Context, request mcp.CallToolRequest) (*mc
 		return requiredParamError(globals.ProjectName, err), nil
 	}
 
-	err = svc.RenameProject(ctx, int64(projectId), name)
+	err = h.svc.RenameProject(ctx, int64(projectId), name)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -51,13 +57,13 @@ func RenameProjectHandler(ctx context.Context, request mcp.CallToolRequest) (*mc
 	return mcp.NewToolResultText("Project renamed successfully!"), nil
 }
 
-func DeleteProjectHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *Handlers) DeleteProjectHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	projectId, err := request.RequireInt(string(globals.ProjectId))
 	if err != nil {
 		return requiredParamError(globals.ProjectId, err), nil
 	}
 
-	err = svc.DeleteProject(ctx, int64(projectId))
+	err = h.svc.DeleteProject(ctx, int64(projectId))
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -65,7 +71,7 @@ func DeleteProjectHandler(ctx context.Context, request mcp.CallToolRequest) (*mc
 	return mcp.NewToolResultText(fmt.Sprintf("Project %v deleted successfully", projectId)), nil
 }
 
-func AddTaskHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *Handlers) AddTaskHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	projectId, err := request.RequireInt(string(globals.ProjectId))
 	if err != nil {
 		return requiredParamError(globals.ProjectId, err), nil
@@ -97,7 +103,7 @@ func AddTaskHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Call
 		SortId:       sort,
 		Dependencies: deps,
 	}
-	err = svc.AddTask(ctx, int64(projectId), args)
+	err = h.svc.AddTask(ctx, int64(projectId), args)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -105,13 +111,13 @@ func AddTaskHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Call
 	return mcp.NewToolResultText("Task added successfully"), nil
 }
 
-func BeginTaskHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *Handlers) BeginTaskHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	taskId, err := request.RequireInt(string(globals.TaskId))
 	if err != nil {
 		return requiredParamError(globals.TaskId, err), nil
 	}
 
-	err = svc.UpdateTaskState(ctx, int64(taskId), services.StateInProgress)
+	err = h.svc.UpdateTaskState(ctx, int64(taskId), services.StateInProgress)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -119,13 +125,13 @@ func BeginTaskHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Ca
 	return mcp.NewToolResultText("Task completed successfully"), nil
 }
 
-func CompleteTaskHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *Handlers) CompleteTaskHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	taskId, err := request.RequireInt(string(globals.TaskId))
 	if err != nil {
 		return requiredParamError(globals.TaskId, err), nil
 	}
 
-	err = svc.UpdateTaskState(ctx, int64(taskId), services.StateComplete)
+	err = h.svc.UpdateTaskState(ctx, int64(taskId), services.StateComplete)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -133,8 +139,8 @@ func CompleteTaskHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp
 	return mcp.NewToolResultText("Task completed successfully"), nil
 }
 
-func GetProjectsHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	projects, err := svc.GetProjects(ctx)
+func (h *Handlers) GetProjectsHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	projects, err := h.svc.GetProjects(ctx)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -143,13 +149,13 @@ func GetProjectsHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 	return mcp.NewToolResultText(string(projectsJson)), nil
 }
 
-func GetTasksHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *Handlers) GetTasksHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	projectId, err := request.RequireInt(string(globals.ProjectId))
 	if err != nil {
 		return requiredParamError(globals.ProjectId, err), nil
 	}
 
-	tasks, err := svc.GetTasksByProject(ctx, int64(projectId))
+	tasks, err := h.svc.GetTasksByProject(ctx, int64(projectId))
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -162,7 +168,7 @@ func GetTasksHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Cal
 	return mcp.NewToolResultText(string(tasksJson)), nil
 }
 
-func GetTaskListInstructionsHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *Handlers) GetTaskListInstructionsHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	instructions := `
 Tasks should be defined in json, with the goal of being as parallelizable as possible.
 

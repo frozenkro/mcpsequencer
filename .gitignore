@@ -4,3 +4,6 @@ mcpsequencer-tui
 *.db
 main
 *.log
+
+build/
+log/

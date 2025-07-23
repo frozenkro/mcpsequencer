@@ -20,6 +20,7 @@ func main() {
 		log.Fatalf("Application Initialization failed. \nError: %v\n", err.Error())
 	}
 	db.Init()
+	h := handlers.NewHandlers()
 
 	// Create a new MCP server
 	s := server.NewMCPServer(
@@ -28,15 +29,15 @@ func main() {
 		server.WithToolCapabilities(false),
 	)
 
-	s.AddTool(tools.CreateProjectTool, handlers.CreateProjectHandler)
-	s.AddTool(tools.RenameProjectTool, handlers.RenameProjectHandler)
-	s.AddTool(tools.DeleteProjectTool, handlers.DeleteProjectHandler)
-	s.AddTool(tools.AddTaskTool, handlers.AddTaskHandler)
-	s.AddTool(tools.BeginTaskTool, handlers.BeginTaskHandler)
-	s.AddTool(tools.CompleteTaskTool, handlers.CompleteTaskHandler)
-	s.AddTool(tools.GetProjectsTool, handlers.GetProjectsHandler)
-	s.AddTool(tools.GetTasksTool, handlers.GetTasksHandler)
-	s.AddTool(tools.GetTaskListInstructionsTool, handlers.GetTaskListInstructionsHandler)
+	s.AddTool(tools.CreateProjectTool, h.CreateProjectHandler)
+	s.AddTool(tools.RenameProjectTool, h.RenameProjectHandler)
+	s.AddTool(tools.DeleteProjectTool, h.DeleteProjectHandler)
+	s.AddTool(tools.AddTaskTool, h.AddTaskHandler)
+	s.AddTool(tools.BeginTaskTool, h.BeginTaskHandler)
+	s.AddTool(tools.CompleteTaskTool, h.CompleteTaskHandler)
+	s.AddTool(tools.GetProjectsTool, h.GetProjectsHandler)
+	s.AddTool(tools.GetTasksTool, h.GetTasksHandler)
+	s.AddTool(tools.GetTaskListInstructionsTool, h.GetTaskListInstructionsHandler)
 
 	if http, port := isHTTP(); http {
 		log.Printf("Starting HTTP Server...")
