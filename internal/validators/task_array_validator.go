@@ -17,8 +17,10 @@ type minimalTask struct {
 func newMinimalTask(t projectsdb.Task) (*minimalTask, error) {
 	depsSl := &[]int{}
 
-	if err := json.Unmarshal([]byte(t.DependenciesJson), depsSl); err != nil {
-		return nil, DepsUnmarshalError{DepsJson: t.DependenciesJson, Err: err}
+	if t.DependenciesJson != "" {
+		if err := json.Unmarshal([]byte(t.DependenciesJson), depsSl); err != nil {
+			return nil, DepsUnmarshalError{DepsJson: t.DependenciesJson, Err: err}
+		}
 	}
 
 	return &minimalTask{
