@@ -75,7 +75,12 @@ func (m *Model) SelectProject(ctx context.Context) (*viewmodels.ProjectView, []l
 
 	items := []list.Item{}
 	for _, task := range tasksData {
-		items = append(items, viewmodels.NewTaskView(task))
+		viewItem, err := viewmodels.NewTaskView(task)
+		if err != nil {
+			logger.Logger.Printf("WARN: Error during initialization of task view model for task '%v'\nError: '%v'\n", task.Name, err.Error())
+		}
+
+		items = append(items, viewItem)
 	}
 
 	return project, items, nil

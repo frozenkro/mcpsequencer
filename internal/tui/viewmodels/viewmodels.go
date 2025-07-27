@@ -1,6 +1,7 @@
 package viewmodels
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/frozenkro/mcpsequencer/internal/projectsdb"
@@ -34,21 +35,23 @@ func (p ProjectView) Description() string {
 
 type TaskView struct {
 	TaskID       int
+	Name         string
 	DescProp     string
 	ProjectID    int
 	Sort         int
 	IsCompleted  bool
 	IsInProgress bool
+	Deps         []int
 	Notes        string
 }
 
 func (t TaskView) FilterValue() string {
-	return t.DescProp
+	return t.Title()
 }
 
 // Title returns the title for display in lists
 func (t TaskView) Title() string {
-	return t.DescProp
+	return t.Name
 }
 
 // Description returns information about the task status
@@ -64,7 +67,7 @@ func (t TaskView) Description() string {
 	return status
 }
 
-func NewTaskView(t projectsdb.Task) TaskView {
+func NewTaskView(t projectsdb.Task) (TaskView, error) {
 	isCompleted := false
 	if t.IsCompleted == 1 {
 		isCompleted = true
@@ -75,12 +78,16 @@ func NewTaskView(t projectsdb.Task) TaskView {
 		isInProgress = true
 	}
 
+	deps := []int{}
+	err := json.Unmarshal([]byte(t.DependenciesJson), &deps)
+
 	return TaskView{
 		TaskID:       int(t.TaskID),
+		Name:         t.Name,
 		DescProp:     t.Description,
 		ProjectID:    int(t.ProjectID),
 		Sort:         int(t.Sort),
 		IsCompleted:  isCompleted,
 		IsInProgress: isInProgress,
-	}
+	}, err
 }

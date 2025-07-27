@@ -6,9 +6,9 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/frozenkro/mcpsequencer/internal/services"
 	"github.com/frozenkro/mcpsequencer/internal/tui/constants"
+	"github.com/frozenkro/mcpsequencer/internal/tui/logger"
 	"github.com/frozenkro/mcpsequencer/internal/tui/viewmodels"
 )
 
@@ -28,15 +28,19 @@ func NewModel(svc services.Services, width, height int) Model {
 	}
 }
 
-func createDelegate() list.DefaultDelegate {
-	delegate := list.NewDefaultDelegate()
-	delegate.ShowDescription = true
-	delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.Foreground(lipgloss.Color("5")).Bold(true)
-	delegate.Styles.SelectedDesc = delegate.Styles.SelectedDesc.Foreground(lipgloss.Color("12"))
-	delegate.Styles.NormalTitle = delegate.Styles.NormalTitle.Foreground(lipgloss.Color("7"))
-	delegate.Styles.NormalDesc = delegate.Styles.NormalDesc.Foreground(lipgloss.Color("8"))
-	return delegate
+func createDelegate() TaskItemDelegate {
+	return TaskItemDelegate{}
 }
+
+// func createDelegate() list.DefaultDelegate {
+// 	delegate := list.NewDefaultDelegate()
+// 	delegate.ShowDescription = true
+// 	delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.Foreground(lipgloss.Color("5")).Bold(true)
+// 	delegate.Styles.SelectedDesc = delegate.Styles.SelectedDesc.Foreground(lipgloss.Color("12"))
+// 	delegate.Styles.NormalTitle = delegate.Styles.NormalTitle.Foreground(lipgloss.Color("7"))
+// 	delegate.Styles.NormalDesc = delegate.Styles.NormalDesc.Foreground(lipgloss.Color("8"))
+// 	return delegate
+// }
 
 func (m *Model) HandleProjectSelected(ctx context.Context, msg constants.ProjectSelectedMsg) error {
 	tasksData, err := m.svc.GetTasksByProject(ctx, int64(msg.ProjectID))
@@ -46,7 +50,10 @@ func (m *Model) HandleProjectSelected(ctx context.Context, msg constants.Project
 
 	l := []list.Item{}
 	for _, t := range tasksData {
-		taskView := viewmodels.NewTaskView(t)
+		taskView, err := viewmodels.NewTaskView(t)
+		if err != nil {
+			logger.Logger.Printf("WARN: Error during initialization of task view model for task '%v'\nError: '%v'\n", t.Name, err.Error())
+		}
 		l = append(l, taskView)
 	}
 	m.List.SetItems(l)
