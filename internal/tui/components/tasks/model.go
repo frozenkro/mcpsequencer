@@ -22,6 +22,7 @@ func NewModel(svc services.Services, width, height int) Model {
 
 	list := list.New([]list.Item{}, createDelegate(), width, height)
 	list.Title = "Tasks"
+	list.SetShowHelp(false)
 	return Model{
 		List: list,
 		svc:  svc,
@@ -65,7 +66,6 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) View() string {
-	// TODO add additional icons and other components here
 	return m.List.View()
 }
 
@@ -78,6 +78,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			l, cmd := m.List.Update(msg)
 			m.List = l
 			return m, cmd
+		}
+
+		if constants.KeyMatch(msg, constants.KeySelect1, constants.KeySelect2) {
+			return m, func() tea.Msg {
+				if len(m.List.Items()) == 0 {
+					return nil
+				}
+				item := m.List.Items()[m.List.Index()]
+				if task, ok := item.(viewmodels.TaskView); ok {
+					logger.Logger.Printf("task selected: '%v'", task.TaskID)
+					return constants.TaskSelectedMsg{TaskID: task.TaskID}
+				}
+				logger.Logger.Println("Failed to parse Item to TaskView")
+				return nil
+			}
 		}
 	}
 

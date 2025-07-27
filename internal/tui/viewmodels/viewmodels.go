@@ -54,15 +54,16 @@ func (t TaskView) Title() string {
 	return t.Name
 }
 
-// Description returns information about the task status
 func (t TaskView) Description() string {
-	status := ""
+	return t.Status()
+}
+
+func (t TaskView) Status() string {
+	status := "Not Started"
 	if t.IsCompleted {
 		status = "Completed"
 	} else if t.IsInProgress {
 		status = "In Progress"
-	} else {
-		status = "Not Started"
 	}
 	return status
 }

@@ -35,6 +35,7 @@ func NewModel(svc services.Services, ctx context.Context, width int, height int)
 
 	projects := list.New(items, delegate, width, height)
 	projects.Title = "Projects"
+	projects.SetShowHelp(false)
 
 	return Model{
 		List: projects,

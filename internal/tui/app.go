@@ -6,6 +6,7 @@ import (
 
 	"github.com/frozenkro/mcpsequencer/internal/services"
 	"github.com/frozenkro/mcpsequencer/internal/tui/components/projects"
+	"github.com/frozenkro/mcpsequencer/internal/tui/components/taskdetail"
 	"github.com/frozenkro/mcpsequencer/internal/tui/components/tasks"
 	tuilog "github.com/frozenkro/mcpsequencer/internal/tui/logger"
 )
@@ -25,11 +26,13 @@ func InitialModel(logger *log.Logger) (Model, error) {
 	}
 
 	tasksModel := tasks.NewModel(svc, width, height)
+	taskDetailModel := taskdetail.NewModel(svc, width, height)
 
 	// Create main model
 	model := Model{
 		Projects:   projectsModel,
 		Tasks:      tasksModel,
+		TaskDetail: taskDetailModel,
 		ActivePane: ProjectPane,
 		Services:   svc,
 		Context:    ctx,
