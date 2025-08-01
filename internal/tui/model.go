@@ -56,7 +56,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case constants.TaskSelectedMsg:
 		// Find the selected task and pass it to task detail
 		for _, item := range m.Tasks.List.Items() {
-			if task, ok := item.(viewmodels.TaskView); ok && task.TaskID == msg.TaskID {
+			if task, ok := item.(viewmodels.TaskItem); ok && task.TaskID == msg.TaskID {
 				m.TaskDetail.HandleTaskSelected(&task)
 				break
 			}

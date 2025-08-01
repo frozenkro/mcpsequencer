@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/frozenkro/mcpsequencer/internal/models"
 	"github.com/frozenkro/mcpsequencer/internal/tui/viewmodels"
 )
 
@@ -20,7 +21,7 @@ func (d TaskItemDelegate) Spacing() int { return 0 }
 func (d TaskItemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd { return nil }
 
 func (d TaskItemDelegate) Render(w io.Writer, m list.Model, index int, li list.Item) {
-	i, ok := li.(viewmodels.TaskView)
+	i, ok := li.(viewmodels.TaskItem)
 	if !ok {
 		return
 	}
@@ -31,9 +32,9 @@ func (d TaskItemDelegate) Render(w io.Writer, m list.Model, index int, li list.I
 	normalStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("7"))
 
 	var icon string
-	if i.IsCompleted {
+	if i.Status == models.Completed {
 		icon = "✅"
-	} else if i.IsInProgress {
+	} else if i.Status == models.InProgress {
 		icon = "🔄"
 	} else {
 		icon = "○"

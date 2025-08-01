@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/frozenkro/mcpsequencer/internal/db"
@@ -26,21 +25,33 @@ const (
 type TaskArrayValidator interface {
 	Validate([]projectsdb.Task) error
 }
+type DependencyValidator interface {
+	Validate([]models.Dependency) error
+}
 type TaskArrayTransformer interface {
-	ParseFromJson(string, int) ([]projectsdb.Task, error)
+	ParseFromJson(string, int) ([]projectsdb.Task, []models.Dependency, error)
+	TaskIdMapFromTasks([]projectsdb.Task) models.SortIdTaskIdMap
+}
+type DependencyTransformer interface {
+	FromInts([]int, int, models.DependencyDiscriminator) []models.Dependency
+	FromDbRows([]projectsdb.Dependency) []models.Dependency
 }
 
 type Services struct {
-	Queries              *projectsdb.Queries
-	TaskArrayValidator   TaskArrayValidator
-	TaskArrayTransformer TaskArrayTransformer
+	Queries               *projectsdb.Queries
+	TaskArrayValidator    TaskArrayValidator
+	DependencyValidator   DependencyValidator
+	TaskArrayTransformer  TaskArrayTransformer
+	DependencyTransformer DependencyTransformer
 }
 
 func NewServices() Services {
 	s := Services{}
 	s.Queries = projectsdb.New(db.DB)
 	s.TaskArrayValidator = validators.TaskArrayValidator{}
+	s.DependencyValidator = validators.DependencyValidator{}
 	s.TaskArrayTransformer = transformers.TaskArrayTransformer{}
+	s.DependencyTransformer = transformers.DependencyTransformer{}
 	return s
 }
 
@@ -55,8 +66,16 @@ func (s *Services) CreateProject(ctx context.Context, args models.CreateProjectA
 		return err
 	}
 
-	tasks, err := s.TaskArrayTransformer.ParseFromJson(args.TasksJson, int(p.ProjectID))
+	tasks, deps, err := s.TaskArrayTransformer.ParseFromJson(args.TasksJson, int(p.ProjectID))
 
+	if err = s.TaskArrayValidator.Validate(tasks); err != nil {
+		return err
+	}
+	if err = s.DependencyValidator.Validate(deps); err != nil {
+		return err
+	}
+
+	sortToTaskIdMap := map[int64]int64{}
 	for _, t := range tasks {
 		task := projectsdb.CreateTaskParams{
 			Name:        t.Name,
@@ -64,9 +83,20 @@ func (s *Services) CreateProject(ctx context.Context, args models.CreateProjectA
 			Sort:        t.Sort,
 			ProjectID:   p.ProjectID,
 		}
-		if _, err := s.Queries.CreateTask(ctx, task); err != nil {
+		newTask, err := s.Queries.CreateTask(ctx, task)
+		if err != nil {
 			return fmt.Errorf("Unable to insert new task '%v'\nError: %w", task.Name, err)
 		}
+
+		sortToTaskIdMap[t.Sort] = newTask.TaskID
+	}
+
+	for _, d := range deps {
+		depParams := projectsdb.AddDependencyForTaskParams{
+			TaskID:    int64(sortToTaskIdMap[int64(d.Id)]),
+			DependsOn: int64(sortToTaskIdMap[int64(d.DependsOn)]),
+		}
+		s.Queries.AddDependencyForTask(ctx, depParams)
 	}
 
 	return nil
@@ -96,15 +126,28 @@ func (s *Services) DeleteProject(ctx context.Context, projectId int64) error {
 	return nil
 }
 
-func (s *Services) GetTasksByProject(ctx context.Context, projectId int64) ([]projectsdb.Task, error) {
-	return s.Queries.GetTasksByProject(ctx, projectId)
+func (s *Services) GetTasksByProject(ctx context.Context, projectId int64) ([]models.Task, error) {
+	taskRows, err := s.Queries.GetTasksByProject(ctx, projectId)
+	if err != nil {
+		return nil, fmt.Errorf("Error retrieving Tasks from DB: %w", err)
+	}
+
+	result := []models.Task{}
+	for _, t := range taskRows {
+
+		depRows, err := s.Queries.GetDependenciesForTask(ctx, t.TaskID)
+		if err != nil {
+			return nil, fmt.Errorf("Error retrieving Dependencies from DB: %w", err)
+		}
+
+		deps := s.DependencyTransformer.FromDbRows(depRows)
+
+		result = append(result, models.NewTask(t, deps))
+	}
+	return result, nil
 }
 
 func (s *Services) AddTask(ctx context.Context, projectId int64, args models.CreateTaskArgs) error {
-	newTaskDepsJson, err := json.Marshal(args.Dependencies)
-	if err != nil {
-		return fmt.Errorf("Unable to parse Dependencies array\nError: %w", err)
-	}
 
 	tasks, err := s.Queries.GetTasksByProject(ctx, projectId)
 	if err != nil {
@@ -129,27 +172,48 @@ func (s *Services) AddTask(ctx context.Context, projectId int64, args models.Cre
 	}
 
 	newTask := projectsdb.Task{
-		Name:             args.Name,
-		Sort:             int64(args.SortId),
-		Description:      args.Description,
-		DependenciesJson: string(newTaskDepsJson),
-		ProjectID:        projectId,
+		Name:        args.Name,
+		Sort:        int64(args.SortId),
+		Description: args.Description,
+		ProjectID:   projectId,
 	}
-	tasks = append(tasks, newTask)
-	if err = s.TaskArrayValidator.Validate(tasks); err != nil {
-		return err
+	validationTasks := append(tasks, newTask)
+	if err = s.TaskArrayValidator.Validate(validationTasks); err != nil {
+		return fmt.Errorf("Error validating Task array: %w", err)
 	}
 
 	params := projectsdb.CreateTaskParams{
-		Name:             newTask.Name,
-		Description:      newTask.Description,
-		ProjectID:        projectId,
-		Sort:             int64(args.SortId),
-		DependenciesJson: newTask.DependenciesJson,
+		Name:        newTask.Name,
+		Description: newTask.Description,
+		ProjectID:   projectId,
+		Sort:        int64(args.SortId),
 	}
 
-	_, err = s.Queries.CreateTask(ctx, params)
-	return err
+	savedTask, err := s.Queries.CreateTask(ctx, params)
+	if err != nil {
+		return fmt.Errorf("Error saving new Task to DB: %w", err)
+	}
+	deps := s.DependencyTransformer.FromInts(args.Dependencies, int(savedTask.TaskID), models.TaskId)
+
+	err = s.DependencyValidator.Validate(deps)
+	if err != nil {
+		return fmt.Errorf("Error validating dependency structure: %w", err)
+	}
+
+	for _, d := range deps {
+
+		args := projectsdb.AddDependencyForTaskParams{
+			TaskID:    savedTask.TaskID,
+			DependsOn: int64(d.DependsOn),
+		}
+
+		err = s.Queries.AddDependencyForTask(ctx, args)
+		if err != nil {
+			return fmt.Errorf("Error saving dependency '{ %v, %v }' to database: %w", args.TaskID, args.DependsOn, err)
+		}
+	}
+
+	return nil
 }
 
 func (s *Services) UpdateTaskState(ctx context.Context, taskId int64, state TaskState) error {
