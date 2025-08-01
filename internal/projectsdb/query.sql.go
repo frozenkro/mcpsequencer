@@ -9,6 +9,21 @@ import (
 	"context"
 )
 
+const addDependencyForTask = `-- name: AddDependencyForTask :exec
+INSERT INTO dependencies (task_id, depends_on)
+VALUES (?, ?)
+`
+
+type AddDependencyForTaskParams struct {
+	TaskID    int64
+	DependsOn int64
+}
+
+func (q *Queries) AddDependencyForTask(ctx context.Context, arg AddDependencyForTaskParams) error {
+	_, err := q.db.ExecContext(ctx, addDependencyForTask, arg.TaskID, arg.DependsOn)
+	return err
+}
+
 const createProject = `-- name: CreateProject :one
 INSERT INTO projects (name, description, absolute_path)
 VALUES (?, ?, ?)
@@ -34,31 +49,27 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 }
 
 const createTask = `-- name: CreateTask :one
-
-INSERT INTO tasks (name, description, project_id, sort, dependencies_json, is_completed, is_in_progress, notes)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING task_id, name, description, project_id, sort, dependencies_json, is_completed, is_in_progress, notes
+INSERT INTO tasks (name, description, project_id, sort, is_completed, is_in_progress, notes)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+RETURNING task_id, name, description, project_id, sort, is_completed, is_in_progress, notes
 `
 
 type CreateTaskParams struct {
-	Name             string
-	Description      string
-	ProjectID        int64
-	Sort             int64
-	DependenciesJson string
-	IsCompleted      int64
-	IsInProgress     int64
-	Notes            interface{}
+	Name         string
+	Description  string
+	ProjectID    int64
+	Sort         int64
+	IsCompleted  int64
+	IsInProgress int64
+	Notes        interface{}
 }
 
-// Tasks CRUD Operations
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
 	row := q.db.QueryRowContext(ctx, createTask,
 		arg.Name,
 		arg.Description,
 		arg.ProjectID,
 		arg.Sort,
-		arg.DependenciesJson,
 		arg.IsCompleted,
 		arg.IsInProgress,
 		arg.Notes,
@@ -70,7 +81,6 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.Description,
 		&i.ProjectID,
 		&i.Sort,
-		&i.DependenciesJson,
 		&i.IsCompleted,
 		&i.IsInProgress,
 		&i.Notes,
@@ -142,64 +152,8 @@ func (q *Queries) GetAllProjects(ctx context.Context) ([]Project, error) {
 	return items, nil
 }
 
-const getAllProjectsWithTaskCounts = `-- name: GetAllProjectsWithTaskCounts :many
-SELECT 
-    p.project_id,
-    p.name,
-    p.description,
-    p.absolute_path,
-    COUNT(t.task_id) as task_count,
-    COUNT(CASE WHEN t.is_completed = 1 THEN 1 END) as completed_count,
-    COUNT(CASE WHEN t.is_in_progress = 1 THEN 1 END) as failed_count
-FROM projects p
-LEFT JOIN tasks t ON p.project_id = t.project_id
-GROUP BY p.project_id, p.name
-ORDER BY p.name
-`
-
-type GetAllProjectsWithTaskCountsRow struct {
-	ProjectID      int64
-	Name           string
-	Description    interface{}
-	AbsolutePath   interface{}
-	TaskCount      int64
-	CompletedCount int64
-	FailedCount    int64
-}
-
-func (q *Queries) GetAllProjectsWithTaskCounts(ctx context.Context) ([]GetAllProjectsWithTaskCountsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAllProjectsWithTaskCounts)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetAllProjectsWithTaskCountsRow
-	for rows.Next() {
-		var i GetAllProjectsWithTaskCountsRow
-		if err := rows.Scan(
-			&i.ProjectID,
-			&i.Name,
-			&i.Description,
-			&i.AbsolutePath,
-			&i.TaskCount,
-			&i.CompletedCount,
-			&i.FailedCount,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getAllTasks = `-- name: GetAllTasks :many
-SELECT task_id, name, description, project_id, sort, dependencies_json, is_completed, is_in_progress, notes
+SELECT task_id, name, description, project_id, sort, is_completed, is_in_progress, notes
 FROM tasks
 ORDER BY sort
 `
@@ -219,7 +173,6 @@ func (q *Queries) GetAllTasks(ctx context.Context) ([]Task, error) {
 			&i.Description,
 			&i.ProjectID,
 			&i.Sort,
-			&i.DependenciesJson,
 			&i.IsCompleted,
 			&i.IsInProgress,
 			&i.Notes,
@@ -237,73 +190,22 @@ func (q *Queries) GetAllTasks(ctx context.Context) ([]Task, error) {
 	return items, nil
 }
 
-const getCompletedTasks = `-- name: GetCompletedTasks :many
-SELECT task_id, name, description, project_id, sort, dependencies_json, is_completed, is_in_progress, notes
-FROM tasks
-WHERE is_completed = 1
-ORDER BY sort
+const getDependenciesForTask = `-- name: GetDependenciesForTask :many
+SELECT task_id, depends_on
+FROM dependencies
+WHERE task_id = ?
 `
 
-func (q *Queries) GetCompletedTasks(ctx context.Context) ([]Task, error) {
-	rows, err := q.db.QueryContext(ctx, getCompletedTasks)
+func (q *Queries) GetDependenciesForTask(ctx context.Context, taskID int64) ([]Dependency, error) {
+	rows, err := q.db.QueryContext(ctx, getDependenciesForTask, taskID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Task
+	var items []Dependency
 	for rows.Next() {
-		var i Task
-		if err := rows.Scan(
-			&i.TaskID,
-			&i.Name,
-			&i.Description,
-			&i.ProjectID,
-			&i.Sort,
-			&i.DependenciesJson,
-			&i.IsCompleted,
-			&i.IsInProgress,
-			&i.Notes,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getPendingTasks = `-- name: GetPendingTasks :many
-SELECT task_id, name, description, project_id, sort, dependencies_json, is_completed, is_in_progress, notes
-FROM tasks
-WHERE is_completed = 0 AND is_in_progress = 0
-ORDER BY sort
-`
-
-func (q *Queries) GetPendingTasks(ctx context.Context) ([]Task, error) {
-	rows, err := q.db.QueryContext(ctx, getPendingTasks)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Task
-	for rows.Next() {
-		var i Task
-		if err := rows.Scan(
-			&i.TaskID,
-			&i.Name,
-			&i.Description,
-			&i.ProjectID,
-			&i.Sort,
-			&i.DependenciesJson,
-			&i.IsCompleted,
-			&i.IsInProgress,
-			&i.Notes,
-		); err != nil {
+		var i Dependency
+		if err := rows.Scan(&i.TaskID, &i.DependsOn); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -335,48 +237,8 @@ func (q *Queries) GetProject(ctx context.Context, projectID int64) (Project, err
 	return i, err
 }
 
-const getProjectWithTaskCount = `-- name: GetProjectWithTaskCount :one
-SELECT 
-    p.project_id,
-    p.name,
-    p.description,
-    p.absolute_path,
-    COUNT(t.task_id) as task_count,
-    COUNT(CASE WHEN t.is_completed = 1 THEN 1 END) as completed_count,
-    COUNT(CASE WHEN t.is_in_progress = 1 THEN 1 END) as failed_count
-FROM projects p
-LEFT JOIN tasks t ON p.project_id = t.project_id
-WHERE p.project_id = ?
-GROUP BY p.project_id, p.name
-`
-
-type GetProjectWithTaskCountRow struct {
-	ProjectID      int64
-	Name           string
-	Description    interface{}
-	AbsolutePath   interface{}
-	TaskCount      int64
-	CompletedCount int64
-	FailedCount    int64
-}
-
-func (q *Queries) GetProjectWithTaskCount(ctx context.Context, projectID int64) (GetProjectWithTaskCountRow, error) {
-	row := q.db.QueryRowContext(ctx, getProjectWithTaskCount, projectID)
-	var i GetProjectWithTaskCountRow
-	err := row.Scan(
-		&i.ProjectID,
-		&i.Name,
-		&i.Description,
-		&i.AbsolutePath,
-		&i.TaskCount,
-		&i.CompletedCount,
-		&i.FailedCount,
-	)
-	return i, err
-}
-
 const getTask = `-- name: GetTask :one
-SELECT task_id, name, description, project_id, sort, dependencies_json, is_completed, is_in_progress, notes
+SELECT task_id, name, description, project_id, sort, is_completed, is_in_progress, notes
 FROM tasks
 WHERE task_id = ?
 `
@@ -390,7 +252,6 @@ func (q *Queries) GetTask(ctx context.Context, taskID int64) (Task, error) {
 		&i.Description,
 		&i.ProjectID,
 		&i.Sort,
-		&i.DependenciesJson,
 		&i.IsCompleted,
 		&i.IsInProgress,
 		&i.Notes,
@@ -399,7 +260,7 @@ func (q *Queries) GetTask(ctx context.Context, taskID int64) (Task, error) {
 }
 
 const getTasksByProject = `-- name: GetTasksByProject :many
-SELECT task_id, name, description, project_id, sort, dependencies_json, is_completed, is_in_progress, notes
+SELECT task_id, name, description, project_id, sort, is_completed, is_in_progress, notes
 FROM tasks
 WHERE project_id = ?
 ORDER BY sort
@@ -420,7 +281,6 @@ func (q *Queries) GetTasksByProject(ctx context.Context, projectID int64) ([]Tas
 			&i.Description,
 			&i.ProjectID,
 			&i.Sort,
-			&i.DependenciesJson,
 			&i.IsCompleted,
 			&i.IsInProgress,
 			&i.Notes,
@@ -438,68 +298,19 @@ func (q *Queries) GetTasksByProject(ctx context.Context, projectID int64) ([]Tas
 	return items, nil
 }
 
-const getTasksWithProject = `-- name: GetTasksWithProject :many
-SELECT 
-    t.task_id,
-    t.name,
-    t.description,
-    t.project_id,
-    t.sort,
-    t.dependencies_json,
-    t.is_completed,
-    t.is_in_progress,
-    t.notes,
-    p.name as project_name
-FROM tasks t
-JOIN projects p ON t.project_id = p.project_id
-ORDER BY p.name, t.sort
+const removeDependency = `-- name: RemoveDependency :exec
+DELETE FROM dependencies
+WHERE task_id = ? AND depends_on = ?
 `
 
-type GetTasksWithProjectRow struct {
-	TaskID           int64
-	Name             string
-	Description      string
-	ProjectID        int64
-	Sort             int64
-	DependenciesJson string
-	IsCompleted      int64
-	IsInProgress     int64
-	Notes            interface{}
-	ProjectName      string
+type RemoveDependencyParams struct {
+	TaskID    int64
+	DependsOn int64
 }
 
-func (q *Queries) GetTasksWithProject(ctx context.Context) ([]GetTasksWithProjectRow, error) {
-	rows, err := q.db.QueryContext(ctx, getTasksWithProject)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetTasksWithProjectRow
-	for rows.Next() {
-		var i GetTasksWithProjectRow
-		if err := rows.Scan(
-			&i.TaskID,
-			&i.Name,
-			&i.Description,
-			&i.ProjectID,
-			&i.Sort,
-			&i.DependenciesJson,
-			&i.IsCompleted,
-			&i.IsInProgress,
-			&i.Notes,
-			&i.ProjectName,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) RemoveDependency(ctx context.Context, arg RemoveDependencyParams) error {
+	_, err := q.db.ExecContext(ctx, removeDependency, arg.TaskID, arg.DependsOn)
+	return err
 }
 
 const updateProject = `-- name: UpdateProject :one
@@ -537,20 +348,19 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (P
 
 const updateTask = `-- name: UpdateTask :one
 UPDATE tasks
-SET name = ?, description = ?, sort = ?, dependencies_json = ?, is_completed = ?, is_in_progress = ?, notes = ?
+SET name = ?, description = ?, sort = ?, is_completed = ?, is_in_progress = ?, notes = ?
 WHERE task_id = ?
 RETURNING task_id, description, project_id, sort, is_completed, is_in_progress, notes
 `
 
 type UpdateTaskParams struct {
-	Name             string
-	Description      string
-	Sort             int64
-	DependenciesJson string
-	IsCompleted      int64
-	IsInProgress     int64
-	Notes            interface{}
-	TaskID           int64
+	Name         string
+	Description  string
+	Sort         int64
+	IsCompleted  int64
+	IsInProgress int64
+	Notes        interface{}
+	TaskID       int64
 }
 
 type UpdateTaskRow struct {
@@ -568,7 +378,6 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (UpdateT
 		arg.Name,
 		arg.Description,
 		arg.Sort,
-		arg.DependenciesJson,
 		arg.IsCompleted,
 		arg.IsInProgress,
 		arg.Notes,
@@ -607,7 +416,7 @@ const updateTaskStatus = `-- name: UpdateTaskStatus :one
 UPDATE tasks
 SET is_completed = ?, is_in_progress = ?
 WHERE task_id = ?
-RETURNING task_id, name, description, project_id, sort, dependencies_json, is_completed, is_in_progress, notes
+RETURNING task_id, name, description, project_id, sort, is_completed, is_in_progress, notes
 `
 
 type UpdateTaskStatusParams struct {
@@ -625,7 +434,6 @@ func (q *Queries) UpdateTaskStatus(ctx context.Context, arg UpdateTaskStatusPara
 		&i.Description,
 		&i.ProjectID,
 		&i.Sort,
-		&i.DependenciesJson,
 		&i.IsCompleted,
 		&i.IsInProgress,
 		&i.Notes,

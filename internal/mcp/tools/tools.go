@@ -72,7 +72,7 @@ var AddTaskTool = mcp.NewTool("addTask",
 		mcp.Description("Sort order of new task. 0 for first, -1 for last"),
 	),
 	mcp.WithArray(string(globals.Dependencies),
-		mcp.Description("The sortIds of any tasks that must be completed before this task. Tasks are otherwise assumed to be parallelizable."),
+		mcp.Description("The taskIds (NOT sortIds) of any tasks that must be completed before this task. Tasks are otherwise assumed to be parallelizable."),
 	),
 )
 
