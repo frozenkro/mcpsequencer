@@ -26,7 +26,7 @@ type TaskArrayValidator interface {
 	Validate([]projectsdb.Task) error
 }
 type DependencyValidator interface {
-	Validate([]models.Dependency) error
+	Validate([]models.Dependency, []int) error
 }
 type TaskArrayTransformer interface {
 	ParseFromJson(string, int) ([]projectsdb.Task, []models.Dependency, error)
@@ -71,7 +71,12 @@ func (s *Services) CreateProject(ctx context.Context, args models.CreateProjectA
 	if err = s.TaskArrayValidator.Validate(tasks); err != nil {
 		return err
 	}
-	if err = s.DependencyValidator.Validate(deps); err != nil {
+
+	taskIds := []int{}
+	for _, t := range tasks {
+		taskIds = append(taskIds, int(t.Sort))
+	}
+	if err = s.DependencyValidator.Validate(deps, taskIds); err != nil {
 		return err
 	}
 
@@ -195,7 +200,12 @@ func (s *Services) AddTask(ctx context.Context, projectId int64, args models.Cre
 	}
 	deps := s.DependencyTransformer.FromInts(args.Dependencies, int(savedTask.TaskID), models.TaskId)
 
-	err = s.DependencyValidator.Validate(deps)
+	taskIds := []int{int(savedTask.TaskID)}
+	for _, t := range tasks {
+		taskIds = append(taskIds, int(t.TaskID))
+	}
+
+	err = s.DependencyValidator.Validate(deps, taskIds)
 	if err != nil {
 		return fmt.Errorf("Error validating dependency structure: %w", err)
 	}

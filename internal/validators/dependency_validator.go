@@ -9,26 +9,44 @@ type DependencyValidator struct {
 }
 
 type minimalTask struct {
-	sort     int
+	entId    int
 	deps     []int
 	complete bool
 }
 
-func (v DependencyValidator) addDep(dep models.Dependency) {
-	if _, ok := v.minimalTasks[dep.Id]; !ok {
-		v.minimalTasks[dep.Id] = &minimalTask{
-			sort:     dep.Id,
+func (v DependencyValidator) initMinimalTasks(allIds []int) {
+	v.minimalTasks = map[int]*minimalTask{}
+
+	for _, i := range allIds {
+		v.minimalTasks[i] = &minimalTask{
+			entId:    i,
 			complete: false,
 		}
+	}
+}
+
+func (v DependencyValidator) addDep(dep models.Dependency) error {
+	if _, ok := v.minimalTasks[dep.Id]; !ok {
+		return InvalidDependencyError{SortID: dep.Id}
 	}
 
 	task := v.minimalTasks[dep.Id]
 	task.deps = append(task.deps, dep.DependsOn)
+	return nil
 }
 
-func (v DependencyValidator) Validate(deps []models.Dependency) error {
+// Will return err if dependency deadlock is possible, or if ids are missing.
+//
+// deps: list of dependencies; associations between tasks that need to be performed sequentially
+//
+// allIds: represents all sortIds or taskIds (depending on Task.Discriminator) for the task list being validated against
+func (v DependencyValidator) Validate(deps []models.Dependency, allIds []int) error {
+	v.initMinimalTasks(allIds)
+
 	for _, d := range deps {
-		v.addDep(d)
+		if err := v.addDep(d); err != nil {
+			return err
+		}
 	}
 
 	for {
@@ -49,10 +67,6 @@ func (v DependencyValidator) Validate(deps []models.Dependency) error {
 			taskLocked := false
 
 			for _, d := range t.deps {
-				if _, ok := v.minimalTasks[d]; !ok {
-					return InvalidDependencyError{SortID: d}
-				}
-
 				if !v.minimalTasks[d].complete {
 					taskLocked = true
 				}
@@ -71,9 +85,9 @@ func (v DependencyValidator) Validate(deps []models.Dependency) error {
 
 			for _, t := range v.minimalTasks {
 				if t.complete {
-					completedIds = append(completedIds, t.sort)
+					completedIds = append(completedIds, t.entId)
 				} else {
-					unreachableIds = append(unreachableIds, t.sort)
+					unreachableIds = append(unreachableIds, t.entId)
 				}
 			}
 			return DependencyTreeParseError{CompletedIds: completedIds, UnreachableIds: unreachableIds}

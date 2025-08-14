@@ -18,51 +18,29 @@ func TestValidateTasksArray(t *testing.T) {
 
 	tests := []tasksTestCase{
 		tasksTestCase{
-			name: "ValidateTasksArray-NoDeps",
+			name: "ValidateTasksArray-NoDuplicates",
 			tasks: []projectsdb.Task{
 				projectsdb.Task{
-					Sort:             int64(0),
-					DependenciesJson: "[]",
+					Sort: int64(0),
 				},
 				projectsdb.Task{
-					Sort:             int64(1),
-					DependenciesJson: "[]",
+					Sort: int64(1),
 				},
 			},
 			succ: true,
 		},
 		tasksTestCase{
-			name: "ValidateTasksArray-SimpleSequence",
+			name: "ValidateTasksArray-WithDuplicates",
 			tasks: []projectsdb.Task{
 				projectsdb.Task{
-					Sort:             int64(0),
-					DependenciesJson: "[]",
+					Sort: int64(0),
 				},
 				projectsdb.Task{
-					Sort:             int64(1),
-					DependenciesJson: "[0]",
-				},
-				projectsdb.Task{
-					Sort:             int64(2),
-					DependenciesJson: "[1]",
-				},
-			},
-			succ: true,
-		},
-		tasksTestCase{
-			name: "ValidateTasksArray-Cyclical",
-			tasks: []projectsdb.Task{
-				projectsdb.Task{
-					Sort:             int64(0),
-					DependenciesJson: "[1]",
-				},
-				projectsdb.Task{
-					Sort:             int64(1),
-					DependenciesJson: "[0]",
+					Sort: int64(0),
 				},
 			},
 			succ:        false,
-			expectedErr: validators.DependencyTreeParseError{},
+			expectedErr: validators.DupeSortIdError{},
 		},
 	}
 
