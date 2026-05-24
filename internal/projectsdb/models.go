@@ -9,6 +9,24 @@ type Dependency struct {
 	DependsOn int64
 }
 
+type ExitCriterium struct {
+	CriterionID int64
+	PhaseID     int64
+	Description string
+	IsCompleted int64
+	Sort        int64
+}
+
+type Phase struct {
+	PhaseID     int64
+	ProjectID   int64
+	Name        string
+	Description interface{}
+	StartDate   string
+	EndDate     string
+	Sort        int64
+}
+
 type Project struct {
 	ProjectID    int64
 	Name         string
@@ -17,12 +35,25 @@ type Project struct {
 }
 
 type Task struct {
-	TaskID       int64
-	Name         string
-	Description  string
-	ProjectID    int64
-	Sort         int64
-	IsCompleted  int64
-	IsInProgress int64
-	Notes        interface{}
+	TaskID         int64
+	Name           string
+	Description    string
+	ProjectID      int64
+	Sort           int64
+	IsCompleted    int64
+	IsInProgress   int64
+	Notes          interface{}
+	Owner          string
+	ScheduledDate  interface{}
+	PhaseID        interface{}
+	BlockerText    interface{}
+	BlockedAt      interface{}
+	EstimatedHours interface{}
+}
+
+type TaskNote struct {
+	NoteID    int64
+	TaskID    int64
+	Note      string
+	CreatedAt string
 }

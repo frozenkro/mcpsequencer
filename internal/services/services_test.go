@@ -229,10 +229,10 @@ func TestGetTasksByProject(t *testing.T) {
 
 	_, err = conn.ExecContext(ctx,
 		`INSERT INTO tasks 
-		(name, description, project_id, sort, dependencies_json, is_completed, is_in_progress)
+		(name, description, project_id, sort, is_completed, is_in_progress, notes)
 		VALUES (?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?)`,
-		taskNames[0], "", projectId, 0, "[]", 0, 0,
-		taskNames[1], "", projectId, 1, "[]", 0, 0,
+		taskNames[0], "", projectId, 0, 0, 0, "",
+		taskNames[1], "", projectId, 1, 0, 0, "",
 	)
 	assert.Nil(t, err)
 

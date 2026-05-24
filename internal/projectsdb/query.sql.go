@@ -24,6 +24,97 @@ func (q *Queries) AddDependencyForTask(ctx context.Context, arg AddDependencyFor
 	return err
 }
 
+const addTaskNote = `-- name: AddTaskNote :exec
+INSERT INTO task_notes (task_id, note, created_at) VALUES (?, ?, datetime('now'))
+`
+
+type AddTaskNoteParams struct {
+	TaskID int64
+	Note   string
+}
+
+func (q *Queries) AddTaskNote(ctx context.Context, arg AddTaskNoteParams) error {
+	_, err := q.db.ExecContext(ctx, addTaskNote, arg.TaskID, arg.Note)
+	return err
+}
+
+const completeExitCriterion = `-- name: CompleteExitCriterion :exec
+UPDATE exit_criteria SET is_completed = 1 WHERE criterion_id = ?
+`
+
+func (q *Queries) CompleteExitCriterion(ctx context.Context, criterionID int64) error {
+	_, err := q.db.ExecContext(ctx, completeExitCriterion, criterionID)
+	return err
+}
+
+const createExitCriterion = `-- name: CreateExitCriterion :one
+INSERT INTO exit_criteria (phase_id, description, is_completed, sort)
+VALUES (?, ?, ?, ?)
+RETURNING criterion_id, phase_id, description, is_completed, sort
+`
+
+type CreateExitCriterionParams struct {
+	PhaseID     int64
+	Description string
+	IsCompleted int64
+	Sort        int64
+}
+
+func (q *Queries) CreateExitCriterion(ctx context.Context, arg CreateExitCriterionParams) (ExitCriterium, error) {
+	row := q.db.QueryRowContext(ctx, createExitCriterion,
+		arg.PhaseID,
+		arg.Description,
+		arg.IsCompleted,
+		arg.Sort,
+	)
+	var i ExitCriterium
+	err := row.Scan(
+		&i.CriterionID,
+		&i.PhaseID,
+		&i.Description,
+		&i.IsCompleted,
+		&i.Sort,
+	)
+	return i, err
+}
+
+const createPhase = `-- name: CreatePhase :one
+INSERT INTO phases (project_id, name, description, start_date, end_date, sort)
+VALUES (?, ?, ?, ?, ?, ?)
+RETURNING phase_id, project_id, name, description, start_date, end_date, sort
+`
+
+type CreatePhaseParams struct {
+	ProjectID   int64
+	Name        string
+	Description interface{}
+	StartDate   string
+	EndDate     string
+	Sort        int64
+}
+
+func (q *Queries) CreatePhase(ctx context.Context, arg CreatePhaseParams) (Phase, error) {
+	row := q.db.QueryRowContext(ctx, createPhase,
+		arg.ProjectID,
+		arg.Name,
+		arg.Description,
+		arg.StartDate,
+		arg.EndDate,
+		arg.Sort,
+	)
+	var i Phase
+	err := row.Scan(
+		&i.PhaseID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.StartDate,
+		&i.EndDate,
+		&i.Sort,
+	)
+	return i, err
+}
+
 const createProject = `-- name: CreateProject :one
 INSERT INTO projects (name, description, absolute_path)
 VALUES (?, ?, ?)
@@ -49,19 +140,23 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 }
 
 const createTask = `-- name: CreateTask :one
-INSERT INTO tasks (name, description, project_id, sort, is_completed, is_in_progress, notes)
-VALUES (?, ?, ?, ?, ?, ?, ?)
-RETURNING task_id, name, description, project_id, sort, is_completed, is_in_progress, notes
+INSERT INTO tasks (name, description, project_id, sort, is_completed, is_in_progress, notes, owner, scheduled_date, phase_id, estimated_hours)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING task_id, name, description, project_id, sort, is_completed, is_in_progress, notes, owner, scheduled_date, phase_id, blocker_text, blocked_at, estimated_hours
 `
 
 type CreateTaskParams struct {
-	Name         string
-	Description  string
-	ProjectID    int64
-	Sort         int64
-	IsCompleted  int64
-	IsInProgress int64
-	Notes        interface{}
+	Name           string
+	Description    string
+	ProjectID      int64
+	Sort           int64
+	IsCompleted    int64
+	IsInProgress   int64
+	Notes          interface{}
+	Owner          string
+	ScheduledDate  interface{}
+	PhaseID        interface{}
+	EstimatedHours interface{}
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
@@ -73,6 +168,10 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		arg.IsCompleted,
 		arg.IsInProgress,
 		arg.Notes,
+		arg.Owner,
+		arg.ScheduledDate,
+		arg.PhaseID,
+		arg.EstimatedHours,
 	)
 	var i Task
 	err := row.Scan(
@@ -84,8 +183,23 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.IsCompleted,
 		&i.IsInProgress,
 		&i.Notes,
+		&i.Owner,
+		&i.ScheduledDate,
+		&i.PhaseID,
+		&i.BlockerText,
+		&i.BlockedAt,
+		&i.EstimatedHours,
 	)
 	return i, err
+}
+
+const deletePhase = `-- name: DeletePhase :exec
+DELETE FROM phases WHERE phase_id = ?
+`
+
+func (q *Queries) DeletePhase(ctx context.Context, phaseID int64) error {
+	_, err := q.db.ExecContext(ctx, deletePhase, phaseID)
+	return err
 }
 
 const deleteProject = `-- name: DeleteProject :exec
@@ -153,7 +267,7 @@ func (q *Queries) GetAllProjects(ctx context.Context) ([]Project, error) {
 }
 
 const getAllTasks = `-- name: GetAllTasks :many
-SELECT task_id, name, description, project_id, sort, is_completed, is_in_progress, notes
+SELECT task_id, name, description, project_id, sort, is_completed, is_in_progress, notes, owner, scheduled_date, phase_id, blocker_text, blocked_at, estimated_hours
 FROM tasks
 ORDER BY sort
 `
@@ -176,6 +290,12 @@ func (q *Queries) GetAllTasks(ctx context.Context) ([]Task, error) {
 			&i.IsCompleted,
 			&i.IsInProgress,
 			&i.Notes,
+			&i.Owner,
+			&i.ScheduledDate,
+			&i.PhaseID,
+			&i.BlockerText,
+			&i.BlockedAt,
+			&i.EstimatedHours,
 		); err != nil {
 			return nil, err
 		}
@@ -219,6 +339,128 @@ func (q *Queries) GetDependenciesForTask(ctx context.Context, taskID int64) ([]D
 	return items, nil
 }
 
+const getDownstreamTasks = `-- name: GetDownstreamTasks :many
+SELECT task_id FROM dependencies WHERE depends_on = ?
+`
+
+func (q *Queries) GetDownstreamTasks(ctx context.Context, dependsOn int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, getDownstreamTasks, dependsOn)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var task_id int64
+		if err := rows.Scan(&task_id); err != nil {
+			return nil, err
+		}
+		items = append(items, task_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getExitCriteriaForPhase = `-- name: GetExitCriteriaForPhase :many
+SELECT criterion_id, phase_id, description, is_completed, sort
+FROM exit_criteria
+WHERE phase_id = ?
+ORDER BY sort
+`
+
+func (q *Queries) GetExitCriteriaForPhase(ctx context.Context, phaseID int64) ([]ExitCriterium, error) {
+	rows, err := q.db.QueryContext(ctx, getExitCriteriaForPhase, phaseID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ExitCriterium
+	for rows.Next() {
+		var i ExitCriterium
+		if err := rows.Scan(
+			&i.CriterionID,
+			&i.PhaseID,
+			&i.Description,
+			&i.IsCompleted,
+			&i.Sort,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPhase = `-- name: GetPhase :one
+SELECT phase_id, project_id, name, description, start_date, end_date, sort
+FROM phases
+WHERE phase_id = ?
+`
+
+func (q *Queries) GetPhase(ctx context.Context, phaseID int64) (Phase, error) {
+	row := q.db.QueryRowContext(ctx, getPhase, phaseID)
+	var i Phase
+	err := row.Scan(
+		&i.PhaseID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.StartDate,
+		&i.EndDate,
+		&i.Sort,
+	)
+	return i, err
+}
+
+const getPhasesForProject = `-- name: GetPhasesForProject :many
+SELECT phase_id, project_id, name, description, start_date, end_date, sort
+FROM phases
+WHERE project_id = ?
+ORDER BY sort
+`
+
+func (q *Queries) GetPhasesForProject(ctx context.Context, projectID int64) ([]Phase, error) {
+	rows, err := q.db.QueryContext(ctx, getPhasesForProject, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Phase
+	for rows.Next() {
+		var i Phase
+		if err := rows.Scan(
+			&i.PhaseID,
+			&i.ProjectID,
+			&i.Name,
+			&i.Description,
+			&i.StartDate,
+			&i.EndDate,
+			&i.Sort,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getProject = `-- name: GetProject :one
 SELECT project_id, name, description, absolute_path
 FROM projects
@@ -238,7 +480,7 @@ func (q *Queries) GetProject(ctx context.Context, projectID int64) (Project, err
 }
 
 const getTask = `-- name: GetTask :one
-SELECT task_id, name, description, project_id, sort, is_completed, is_in_progress, notes
+SELECT task_id, name, description, project_id, sort, is_completed, is_in_progress, notes, owner, scheduled_date, phase_id, blocker_text, blocked_at, estimated_hours
 FROM tasks
 WHERE task_id = ?
 `
@@ -255,12 +497,50 @@ func (q *Queries) GetTask(ctx context.Context, taskID int64) (Task, error) {
 		&i.IsCompleted,
 		&i.IsInProgress,
 		&i.Notes,
+		&i.Owner,
+		&i.ScheduledDate,
+		&i.PhaseID,
+		&i.BlockerText,
+		&i.BlockedAt,
+		&i.EstimatedHours,
 	)
 	return i, err
 }
 
+const getTaskNotes = `-- name: GetTaskNotes :many
+SELECT note_id, task_id, note, created_at FROM task_notes WHERE task_id = ? ORDER BY created_at
+`
+
+func (q *Queries) GetTaskNotes(ctx context.Context, taskID int64) ([]TaskNote, error) {
+	rows, err := q.db.QueryContext(ctx, getTaskNotes, taskID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TaskNote
+	for rows.Next() {
+		var i TaskNote
+		if err := rows.Scan(
+			&i.NoteID,
+			&i.TaskID,
+			&i.Note,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getTasksByProject = `-- name: GetTasksByProject :many
-SELECT task_id, name, description, project_id, sort, is_completed, is_in_progress, notes
+SELECT task_id, name, description, project_id, sort, is_completed, is_in_progress, notes, owner, scheduled_date, phase_id, blocker_text, blocked_at, estimated_hours
 FROM tasks
 WHERE project_id = ?
 ORDER BY sort
@@ -284,10 +564,183 @@ func (q *Queries) GetTasksByProject(ctx context.Context, projectID int64) ([]Tas
 			&i.IsCompleted,
 			&i.IsInProgress,
 			&i.Notes,
+			&i.Owner,
+			&i.ScheduledDate,
+			&i.PhaseID,
+			&i.BlockerText,
+			&i.BlockedAt,
+			&i.EstimatedHours,
 		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTasksForOwner = `-- name: GetTasksForOwner :many
+SELECT task_id, name, description, project_id, sort, is_completed, is_in_progress, notes, owner, scheduled_date, phase_id, blocker_text, blocked_at, estimated_hours
+FROM tasks
+WHERE project_id = ? AND owner = ?
+ORDER BY sort
+`
+
+type GetTasksForOwnerParams struct {
+	ProjectID int64
+	Owner     string
+}
+
+func (q *Queries) GetTasksForOwner(ctx context.Context, arg GetTasksForOwnerParams) ([]Task, error) {
+	rows, err := q.db.QueryContext(ctx, getTasksForOwner, arg.ProjectID, arg.Owner)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Task
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.TaskID,
+			&i.Name,
+			&i.Description,
+			&i.ProjectID,
+			&i.Sort,
+			&i.IsCompleted,
+			&i.IsInProgress,
+			&i.Notes,
+			&i.Owner,
+			&i.ScheduledDate,
+			&i.PhaseID,
+			&i.BlockerText,
+			&i.BlockedAt,
+			&i.EstimatedHours,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTasksForPhase = `-- name: GetTasksForPhase :many
+SELECT task_id, name, description, project_id, sort, is_completed, is_in_progress, notes, owner, scheduled_date, phase_id, blocker_text, blocked_at, estimated_hours
+FROM tasks
+WHERE phase_id = ?
+ORDER BY sort
+`
+
+func (q *Queries) GetTasksForPhase(ctx context.Context, phaseID interface{}) ([]Task, error) {
+	rows, err := q.db.QueryContext(ctx, getTasksForPhase, phaseID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Task
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.TaskID,
+			&i.Name,
+			&i.Description,
+			&i.ProjectID,
+			&i.Sort,
+			&i.IsCompleted,
+			&i.IsInProgress,
+			&i.Notes,
+			&i.Owner,
+			&i.ScheduledDate,
+			&i.PhaseID,
+			&i.BlockerText,
+			&i.BlockedAt,
+			&i.EstimatedHours,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTodaysTasks = `-- name: GetTodaysTasks :many
+SELECT task_id, name, description, project_id, sort, is_completed, is_in_progress, notes, owner, scheduled_date, phase_id, blocker_text, blocked_at, estimated_hours
+FROM tasks
+WHERE scheduled_date <= date('now') AND is_completed = 0 AND project_id = ?
+ORDER BY COALESCE(phase_id, 999999), sort
+`
+
+func (q *Queries) GetTodaysTasks(ctx context.Context, projectID int64) ([]Task, error) {
+	rows, err := q.db.QueryContext(ctx, getTodaysTasks, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Task
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.TaskID,
+			&i.Name,
+			&i.Description,
+			&i.ProjectID,
+			&i.Sort,
+			&i.IsCompleted,
+			&i.IsInProgress,
+			&i.Notes,
+			&i.Owner,
+			&i.ScheduledDate,
+			&i.PhaseID,
+			&i.BlockerText,
+			&i.BlockedAt,
+			&i.EstimatedHours,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUpstreamTasks = `-- name: GetUpstreamTasks :many
+SELECT depends_on FROM dependencies WHERE task_id = ?
+`
+
+func (q *Queries) GetUpstreamTasks(ctx context.Context, taskID int64) ([]int64, error) {
+	rows, err := q.db.QueryContext(ctx, getUpstreamTasks, taskID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var depends_on int64
+		if err := rows.Scan(&depends_on); err != nil {
+			return nil, err
+		}
+		items = append(items, depends_on)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -311,6 +764,114 @@ type RemoveDependencyParams struct {
 func (q *Queries) RemoveDependency(ctx context.Context, arg RemoveDependencyParams) error {
 	_, err := q.db.ExecContext(ctx, removeDependency, arg.TaskID, arg.DependsOn)
 	return err
+}
+
+const resolveTaskBlocker = `-- name: ResolveTaskBlocker :exec
+UPDATE tasks SET blocker_text = NULL, blocked_at = NULL WHERE task_id = ?
+`
+
+func (q *Queries) ResolveTaskBlocker(ctx context.Context, taskID int64) error {
+	_, err := q.db.ExecContext(ctx, resolveTaskBlocker, taskID)
+	return err
+}
+
+const setTaskBlocker = `-- name: SetTaskBlocker :exec
+UPDATE tasks SET blocker_text = ?, blocked_at = datetime('now') WHERE task_id = ?
+`
+
+type SetTaskBlockerParams struct {
+	BlockerText interface{}
+	TaskID      int64
+}
+
+func (q *Queries) SetTaskBlocker(ctx context.Context, arg SetTaskBlockerParams) error {
+	_, err := q.db.ExecContext(ctx, setTaskBlocker, arg.BlockerText, arg.TaskID)
+	return err
+}
+
+const setTaskOwner = `-- name: SetTaskOwner :exec
+UPDATE tasks SET owner = ? WHERE task_id = ?
+`
+
+type SetTaskOwnerParams struct {
+	Owner  string
+	TaskID int64
+}
+
+func (q *Queries) SetTaskOwner(ctx context.Context, arg SetTaskOwnerParams) error {
+	_, err := q.db.ExecContext(ctx, setTaskOwner, arg.Owner, arg.TaskID)
+	return err
+}
+
+const setTaskSchedule = `-- name: SetTaskSchedule :exec
+UPDATE tasks SET scheduled_date = ?, phase_id = ? WHERE task_id = ?
+`
+
+type SetTaskScheduleParams struct {
+	ScheduledDate interface{}
+	PhaseID       interface{}
+	TaskID        int64
+}
+
+func (q *Queries) SetTaskSchedule(ctx context.Context, arg SetTaskScheduleParams) error {
+	_, err := q.db.ExecContext(ctx, setTaskSchedule, arg.ScheduledDate, arg.PhaseID, arg.TaskID)
+	return err
+}
+
+const uncompleteExitCriterion = `-- name: UncompleteExitCriterion :exec
+UPDATE exit_criteria SET is_completed = 0 WHERE criterion_id = ?
+`
+
+func (q *Queries) UncompleteExitCriterion(ctx context.Context, criterionID int64) error {
+	_, err := q.db.ExecContext(ctx, uncompleteExitCriterion, criterionID)
+	return err
+}
+
+const unlinkTasksFromPhase = `-- name: UnlinkTasksFromPhase :exec
+UPDATE tasks SET phase_id = NULL WHERE phase_id = ?
+`
+
+func (q *Queries) UnlinkTasksFromPhase(ctx context.Context, phaseID interface{}) error {
+	_, err := q.db.ExecContext(ctx, unlinkTasksFromPhase, phaseID)
+	return err
+}
+
+const updatePhase = `-- name: UpdatePhase :one
+UPDATE phases
+SET name = ?, description = ?, start_date = ?, end_date = ?, sort = ?
+WHERE phase_id = ?
+RETURNING phase_id, project_id, name, description, start_date, end_date, sort
+`
+
+type UpdatePhaseParams struct {
+	Name        string
+	Description interface{}
+	StartDate   string
+	EndDate     string
+	Sort        int64
+	PhaseID     int64
+}
+
+func (q *Queries) UpdatePhase(ctx context.Context, arg UpdatePhaseParams) (Phase, error) {
+	row := q.db.QueryRowContext(ctx, updatePhase,
+		arg.Name,
+		arg.Description,
+		arg.StartDate,
+		arg.EndDate,
+		arg.Sort,
+		arg.PhaseID,
+	)
+	var i Phase
+	err := row.Scan(
+		&i.PhaseID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.StartDate,
+		&i.EndDate,
+		&i.Sort,
+	)
+	return i, err
 }
 
 const updateProject = `-- name: UpdateProject :one
@@ -348,32 +909,27 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (P
 
 const updateTask = `-- name: UpdateTask :one
 UPDATE tasks
-SET name = ?, description = ?, sort = ?, is_completed = ?, is_in_progress = ?, notes = ?
+SET name = ?, description = ?, sort = ?, is_completed = ?, is_in_progress = ?, notes = ?,
+    owner = ?, scheduled_date = ?, phase_id = ?, estimated_hours = ?
 WHERE task_id = ?
-RETURNING task_id, description, project_id, sort, is_completed, is_in_progress, notes
+RETURNING task_id, name, description, project_id, sort, is_completed, is_in_progress, notes, owner, scheduled_date, phase_id, blocker_text, blocked_at, estimated_hours
 `
 
 type UpdateTaskParams struct {
-	Name         string
-	Description  string
-	Sort         int64
-	IsCompleted  int64
-	IsInProgress int64
-	Notes        interface{}
-	TaskID       int64
+	Name           string
+	Description    string
+	Sort           int64
+	IsCompleted    int64
+	IsInProgress   int64
+	Notes          interface{}
+	Owner          string
+	ScheduledDate  interface{}
+	PhaseID        interface{}
+	EstimatedHours interface{}
+	TaskID         int64
 }
 
-type UpdateTaskRow struct {
-	TaskID       int64
-	Description  string
-	ProjectID    int64
-	Sort         int64
-	IsCompleted  int64
-	IsInProgress int64
-	Notes        interface{}
-}
-
-func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (UpdateTaskRow, error) {
+func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
 	row := q.db.QueryRowContext(ctx, updateTask,
 		arg.Name,
 		arg.Description,
@@ -381,17 +937,28 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (UpdateT
 		arg.IsCompleted,
 		arg.IsInProgress,
 		arg.Notes,
+		arg.Owner,
+		arg.ScheduledDate,
+		arg.PhaseID,
+		arg.EstimatedHours,
 		arg.TaskID,
 	)
-	var i UpdateTaskRow
+	var i Task
 	err := row.Scan(
 		&i.TaskID,
+		&i.Name,
 		&i.Description,
 		&i.ProjectID,
 		&i.Sort,
 		&i.IsCompleted,
 		&i.IsInProgress,
 		&i.Notes,
+		&i.Owner,
+		&i.ScheduledDate,
+		&i.PhaseID,
+		&i.BlockerText,
+		&i.BlockedAt,
+		&i.EstimatedHours,
 	)
 	return i, err
 }
@@ -416,7 +983,7 @@ const updateTaskStatus = `-- name: UpdateTaskStatus :one
 UPDATE tasks
 SET is_completed = ?, is_in_progress = ?
 WHERE task_id = ?
-RETURNING task_id, name, description, project_id, sort, is_completed, is_in_progress, notes
+RETURNING task_id, name, description, project_id, sort, is_completed, is_in_progress, notes, owner, scheduled_date, phase_id, blocker_text, blocked_at, estimated_hours
 `
 
 type UpdateTaskStatusParams struct {
@@ -437,6 +1004,12 @@ func (q *Queries) UpdateTaskStatus(ctx context.Context, arg UpdateTaskStatusPara
 		&i.IsCompleted,
 		&i.IsInProgress,
 		&i.Notes,
+		&i.Owner,
+		&i.ScheduledDate,
+		&i.PhaseID,
+		&i.BlockerText,
+		&i.BlockedAt,
+		&i.EstimatedHours,
 	)
 	return i, err
 }

@@ -39,6 +39,35 @@ func main() {
 	s.AddTool(tools.GetTasksTool, h.GetTasksHandler)
 	s.AddTool(tools.GetTaskListInstructionsTool, h.GetTaskListInstructionsHandler)
 
+	// Phase tools
+	s.AddTool(tools.CreatePhaseTool, h.CreatePhaseHandler)
+	s.AddTool(tools.GetPhasesTool, h.GetPhasesHandler)
+	s.AddTool(tools.UpdatePhaseTool, h.UpdatePhaseHandler)
+	s.AddTool(tools.DeletePhaseTool, h.DeletePhaseHandler)
+
+	// Task ownership / scheduling / blocker tools
+	s.AddTool(tools.SetTaskOwnerTool, h.SetTaskOwnerHandler)
+	s.AddTool(tools.SetTaskScheduleTool, h.SetTaskScheduleHandler)
+	s.AddTool(tools.SetTaskBlockerTool, h.SetTaskBlockerHandler)
+	s.AddTool(tools.ResolveTaskBlockerTool, h.ResolveTaskBlockerHandler)
+
+	// Task notes tools
+	s.AddTool(tools.AddTaskNoteTool, h.AddTaskNoteHandler)
+	s.AddTool(tools.GetTaskNotesTool, h.GetTaskNotesHandler)
+
+	// Query tools
+	s.AddTool(tools.GetTodaysTasksTool, h.GetTodaysTasksHandler)
+	s.AddTool(tools.GetTasksByOwnerTool, h.GetTasksByOwnerHandler)
+
+	// Exit criteria tools
+	s.AddTool(tools.AddExitCriterionTool, h.AddExitCriterionHandler)
+	s.AddTool(tools.CompleteExitCriterionTool, h.CompleteExitCriterionHandler)
+	s.AddTool(tools.GetExitCriteriaTool, h.GetExitCriteriaHandler)
+
+	// Cross-task lookups
+	s.AddTool(tools.GetDownstreamTasksTool, h.GetDownstreamTasksHandler)
+	s.AddTool(tools.GetUpstreamTasksTool, h.GetUpstreamTasksHandler)
+
 	if http, port := isHTTP(); http {
 		log.Printf("Starting HTTP Server...")
 

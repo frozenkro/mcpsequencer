@@ -14,39 +14,24 @@ type minimalTask struct {
 	complete bool
 }
 
-func (v DependencyValidator) initMinimalTasks(allIds []int) {
-	v.minimalTasks = map[int]*minimalTask{}
-
+func (v DependencyValidator) Validate(deps []models.Dependency, allIds []int) error {
+	v.minimalTasks = make(map[int]*minimalTask)
 	for _, i := range allIds {
 		v.minimalTasks[i] = &minimalTask{
 			entId:    i,
 			complete: false,
 		}
 	}
-}
-
-func (v DependencyValidator) addDep(dep models.Dependency) error {
-	if _, ok := v.minimalTasks[dep.Id]; !ok {
-		return InvalidDependencyError{SortID: dep.Id}
-	}
-
-	task := v.minimalTasks[dep.Id]
-	task.deps = append(task.deps, dep.DependsOn)
-	return nil
-}
-
-// Will return err if dependency deadlock is possible, or if ids are missing.
-//
-// deps: list of dependencies; associations between tasks that need to be performed sequentially
-//
-// allIds: represents all sortIds or taskIds (depending on Task.Discriminator) for the task list being validated against
-func (v DependencyValidator) Validate(deps []models.Dependency, allIds []int) error {
-	v.initMinimalTasks(allIds)
 
 	for _, d := range deps {
-		if err := v.addDep(d); err != nil {
-			return err
+		if _, ok := v.minimalTasks[d.Id]; !ok {
+			return InvalidDependencyError{SortID: d.Id}
 		}
+		if _, ok := v.minimalTasks[d.DependsOn]; !ok {
+			return InvalidDependencyError{SortID: d.DependsOn}
+		}
+		task := v.minimalTasks[d.Id]
+		task.deps = append(task.deps, d.DependsOn)
 	}
 
 	for {
