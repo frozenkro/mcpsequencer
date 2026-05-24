@@ -33,15 +33,47 @@ func (p ProjectItem) Description() string {
 	return "Project ID: " + fmt.Sprintf("%d", p.ProjectID)
 }
 
+type PhaseItem struct {
+	PhaseID     int
+	Name        string
+	StartDate   string
+	EndDate     string
+	ExitDone    int
+	ExitTotal   int
+}
+
+func NewPhaseItem(phase models.Phase, exitDone, exitTotal int) PhaseItem {
+	return PhaseItem{
+		PhaseID:   phase.PhaseId,
+		Name:      phase.Name,
+		StartDate: phase.StartDate,
+		EndDate:   phase.EndDate,
+		ExitDone:  exitDone,
+		ExitTotal: exitTotal,
+	}
+}
+
+func (p PhaseItem) FilterValue() string { return p.Name }
+func (p PhaseItem) Title() string     { return p.Name }
+func (p PhaseItem) Description() string {
+	return fmt.Sprintf("%s → %s | exit criteria: %d/%d", p.StartDate, p.EndDate, p.ExitDone, p.ExitTotal)
+}
+
 type TaskItem struct {
-	TaskID    int
-	Name      string
-	DescProp  string
-	ProjectID int
-	Sort      int
-	Status    models.Status
-	Deps      []int
-	Notes     string
+	TaskID         int
+	Name           string
+	DescProp       string
+	ProjectID      int
+	Sort           int
+	Status         models.Status
+	Deps           []int
+	Notes          string
+	Owner          models.Owner
+	ScheduledDate  *string
+	PhaseId        *int
+	BlockerText    *string
+	BlockedAt      *string
+	EstimatedHours *int
 }
 
 func (t TaskItem) FilterValue() string {
@@ -68,12 +100,18 @@ func NewTaskItem(t models.Task) (TaskItem, error) {
 	}
 
 	return TaskItem{
-		TaskID:    int(t.TaskId),
-		Name:      t.Name,
-		DescProp:  t.Description,
-		ProjectID: int(t.ProjectId),
-		Sort:      int(t.Sort),
-		Status:    t.Status,
-		Deps:      deps,
+		TaskID:         int(t.TaskId),
+		Name:           t.Name,
+		DescProp:       t.Description,
+		ProjectID:      int(t.ProjectId),
+		Sort:           int(t.Sort),
+		Status:         t.Status,
+		Deps:           deps,
+		Owner:          t.Owner,
+		ScheduledDate:  t.ScheduledDate,
+		PhaseId:        t.PhaseId,
+		BlockerText:    t.BlockerText,
+		BlockedAt:      t.BlockedAt,
+		EstimatedHours: t.EstimatedHours,
 	}, nil
 }

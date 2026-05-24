@@ -6,10 +6,14 @@ package models
 // When creating a project with tasks, Dependencies is a list of SortIDs
 // When creating an individual task, Dependencies is a list of TaskIDs
 type CreateTaskArgs struct {
-	Name         string `json:"name"`
-	Description  string `json:"description"`
-	SortId       int    `json:"sortId"`
-	Dependencies []int  `json:"dependencies"`
+	Name            string  `json:"name"`
+	Description     string  `json:"description"`
+	SortId          int     `json:"sortId"`
+	Dependencies    []int   `json:"dependencies"`
+	Owner           *string `json:"owner,omitempty"`
+	ScheduledDate   *string `json:"scheduledDate,omitempty"`
+	PhaseId         *int    `json:"phaseId,omitempty"`
+	EstimatedHours  *int    `json:"estimatedHours,omitempty"`
 }
 
 // UpdateTaskArgs contains the parameters needed to update an existing task.

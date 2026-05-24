@@ -172,6 +172,24 @@ func (m Model) renderViewMode() string {
 	content.WriteString(valueStyle.Render(fmt.Sprintf("%d", m.Task.TaskID)))
 	content.WriteString("\n")
 
+	content.WriteString(labelStyle.Render("Owner: "))
+	ownerStr := string(m.Task.Owner)
+	if ownerStr == "" { ownerStr = "USER" }
+	content.WriteString(valueStyle.Render(ownerStr))
+	content.WriteString("\n")
+
+	if m.Task.ScheduledDate != nil {
+		content.WriteString(labelStyle.Render("Scheduled: "))
+		content.WriteString(valueStyle.Render(*m.Task.ScheduledDate))
+		content.WriteString("\n")
+	}
+
+	if m.Task.BlockerText != nil {
+		content.WriteString(labelStyle.Render("Blocker: "))
+		content.WriteString(valueStyle.Render(*m.Task.BlockerText))
+		content.WriteString("\n")
+	}
+
 	content.WriteString(labelStyle.Render("Sort Order: "))
 	content.WriteString(valueStyle.Render(fmt.Sprintf("%d", m.Task.Sort)))
 	content.WriteString("\n\n")

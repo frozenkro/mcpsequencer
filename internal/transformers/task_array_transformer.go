@@ -21,11 +21,35 @@ func (t TaskArrayTransformer) ParseFromJson(tasks string, projectId int) ([]proj
 	deps := []models.Dependency{}
 	for _, taskArgs := range argsSl {
 
+		owner := models.User
+		if taskArgs.Owner != nil && *taskArgs.Owner != "" {
+			owner = models.Owner(*taskArgs.Owner)
+		}
+
+		var scheduledDate interface{}
+		if taskArgs.ScheduledDate != nil {
+			scheduledDate = *taskArgs.ScheduledDate
+		}
+
+		var phaseId interface{}
+		if taskArgs.PhaseId != nil {
+			phaseId = int64(*taskArgs.PhaseId)
+		}
+
+		var estimatedHours interface{}
+		if taskArgs.EstimatedHours != nil {
+			estimatedHours = int64(*taskArgs.EstimatedHours)
+		}
+
 		task := projectsdb.Task{
-			ProjectID:   int64(projectId),
-			Name:        taskArgs.Name,
-			Description: taskArgs.Description,
-			Sort:        int64(taskArgs.SortId),
+			ProjectID:      int64(projectId),
+			Name:           taskArgs.Name,
+			Description:    taskArgs.Description,
+			Sort:           int64(taskArgs.SortId),
+			Owner:          string(owner),
+			ScheduledDate:  scheduledDate,
+			PhaseID:        phaseId,
+			EstimatedHours: estimatedHours,
 		}
 
 		for _, d := range depTrn.FromInts(taskArgs.Dependencies, taskArgs.SortId, models.SortId) {

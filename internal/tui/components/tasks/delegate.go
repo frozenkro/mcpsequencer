@@ -31,6 +31,29 @@ func (d TaskItemDelegate) Render(w io.Writer, m list.Model, index int, li list.I
 	selectedStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("5"))
 	normalStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("7"))
 
+	// Owner badge
+	ownerBadge := ""
+	switch i.Owner {
+	case models.AiAgent:
+		ownerBadge = "[A]"
+	case models.Collabor:
+		ownerBadge = "[C]"
+	default:
+		ownerBadge = "[U]"
+	}
+
+	// Blocker indicator
+	blocker := ""
+	if i.BlockerText != nil && *i.BlockerText != "" {
+		blocker = "(!)"
+	}
+
+	// Date badge
+	dateBadge := ""
+	if i.ScheduledDate != nil {
+		dateBadge = fmt.Sprintf(" [%s]", *i.ScheduledDate)
+	}
+
 	var icon string
 	if i.Status == models.Completed {
 		icon = "✅"
@@ -40,10 +63,12 @@ func (d TaskItemDelegate) Render(w io.Writer, m list.Model, index int, li list.I
 		icon = "○"
 	}
 
+	line := fmt.Sprintf("%s %s%s %s%s", ownerBadge, blocker, icon, i.Title(), dateBadge)
+
 	if index == m.Index() {
-		str.WriteString(selectedStyle.Render(fmt.Sprintf("%s %s", icon, i.Title())))
+		str.WriteString(selectedStyle.Render(line))
 	} else {
-		str.WriteString(normalStyle.Render(fmt.Sprintf("%s %s", icon, i.Title())))
+		str.WriteString(normalStyle.Render(line))
 	}
 
 	fmt.Fprint(w, str.String())
