@@ -16,7 +16,7 @@ import (
 
 type Model struct {
 	List     list.Model
-	Selected *viewmodels.ProjectView
+	Selected *viewmodels.ProjectItem
 	svc      services.Services
 }
 
@@ -28,7 +28,7 @@ func NewModel(svc services.Services, ctx context.Context, width int, height int)
 
 	var items []list.Item
 	for _, project := range projectsData {
-		items = append(items, viewmodels.NewProjectView(project))
+		items = append(items, viewmodels.NewProjectItem(project))
 	}
 
 	delegate := createDelegate()
@@ -54,13 +54,13 @@ func createDelegate() list.DefaultDelegate {
 }
 
 // Handle project selection
-func (m *Model) SelectProject(ctx context.Context) (*viewmodels.ProjectView, []list.Item, error) {
+func (m *Model) SelectProject(ctx context.Context) (*viewmodels.ProjectItem, []list.Item, error) {
 	selectedItem := m.List.SelectedItem()
-	var project *viewmodels.ProjectView
+	var project *viewmodels.ProjectItem
 
-	if p, ok := selectedItem.(viewmodels.ProjectView); ok {
+	if p, ok := selectedItem.(viewmodels.ProjectItem); ok {
 		project = &p
-	} else if p, ok := selectedItem.(*viewmodels.ProjectView); ok {
+	} else if p, ok := selectedItem.(*viewmodels.ProjectItem); ok {
 		project = p
 	} else {
 		return nil, nil, nil
@@ -76,12 +76,12 @@ func (m *Model) SelectProject(ctx context.Context) (*viewmodels.ProjectView, []l
 
 	items := []list.Item{}
 	for _, task := range tasksData {
-		viewItem, err := viewmodels.NewTaskView(task)
+		taskItem, err := viewmodels.NewTaskItem(task)
 		if err != nil {
 			logger.Logger.Printf("WARN: Error during initialization of task view model for task '%v'\nError: '%v'\n", task.Name, err.Error())
 		}
 
-		items = append(items, viewItem)
+		items = append(items, taskItem)
 	}
 
 	return project, items, nil
@@ -113,12 +113,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if constants.KeyMatch(msg, constants.KeySelect1, constants.KeySelect2) {
 			return m, func() tea.Msg {
 				item := m.List.Items()[m.List.GlobalIndex()]
-				if project, ok := item.(viewmodels.ProjectView); ok {
+				if project, ok := item.(viewmodels.ProjectItem); ok {
 					m.Selected = &project
 					logger.Logger.Println(fmt.Sprintf("project selected: '%v'", m.Selected.ProjectID))
 					return constants.ProjectSelectedMsg{ProjectID: m.Selected.ProjectID}
 				}
-				logger.Logger.Println("Failed to parse Item to ProjectView")
+				logger.Logger.Println("Failed to parse Item to ProjectItem")
 				return nil
 			}
 		}

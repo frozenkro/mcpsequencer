@@ -9,29 +9,38 @@ import (
 
 type TaskArrayTransformer struct{}
 
-func (t TaskArrayTransformer) ParseFromJson(tasks string, projectId int) ([]projectsdb.Task, error) {
+var depTrn DependencyTransformer = DependencyTransformer{}
+
+func (t TaskArrayTransformer) ParseFromJson(tasks string, projectId int) ([]projectsdb.Task, []models.Dependency, error) {
 	argsSl := []models.CreateTaskArgs{}
 	if err := json.Unmarshal([]byte(tasks), &argsSl); err != nil {
-		return nil, TasksUnmarshalError{}
+		return nil, nil, TasksUnmarshalError{}
 	}
 
 	result := []projectsdb.Task{}
+	deps := []models.Dependency{}
 	for _, taskArgs := range argsSl {
 
-		jsonDeps, err := json.Marshal(taskArgs.Dependencies)
-		if err != nil {
-			return nil, DepsMarshalError{Deps: taskArgs.Dependencies, Err: err}
+		task := projectsdb.Task{
+			ProjectID:   int64(projectId),
+			Name:        taskArgs.Name,
+			Description: taskArgs.Description,
+			Sort:        int64(taskArgs.SortId),
 		}
 
-		task := projectsdb.Task{
-			ProjectID:        int64(projectId),
-			Name:             taskArgs.Name,
-			Description:      taskArgs.Description,
-			Sort:             int64(taskArgs.SortId),
-			DependenciesJson: string(jsonDeps),
+		for _, d := range depTrn.FromInts(taskArgs.Dependencies, taskArgs.SortId, models.SortId) {
+			deps = append(deps, d)
 		}
 
 		result = append(result, task)
 	}
-	return result, nil
+	return result, deps, nil
+}
+
+func (t TaskArrayTransformer) TaskIdMapFromTasks(tasks []projectsdb.Task) models.SortIdTaskIdMap {
+	result := models.SortIdTaskIdMap{}
+	for _, t := range tasks {
+		result[t.Sort] = t.TaskID
+	}
+	return result
 }

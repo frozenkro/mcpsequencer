@@ -14,7 +14,7 @@ import (
 
 type Model struct {
 	List     list.Model
-	Selected *viewmodels.ProjectView
+	Selected *viewmodels.ProjectItem
 	svc      services.Services
 }
 
@@ -51,11 +51,11 @@ func (m *Model) HandleProjectSelected(ctx context.Context, msg constants.Project
 
 	l := []list.Item{}
 	for _, t := range tasksData {
-		taskView, err := viewmodels.NewTaskView(t)
+		taskItem, err := viewmodels.NewTaskItem(t)
 		if err != nil {
 			logger.Logger.Printf("WARN: Error during initialization of task view model for task '%v'\nError: '%v'\n", t.Name, err.Error())
 		}
-		l = append(l, taskView)
+		l = append(l, taskItem)
 	}
 	m.List.SetItems(l)
 	return nil
@@ -86,11 +86,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return nil
 				}
 				item := m.List.Items()[m.List.Index()]
-				if task, ok := item.(viewmodels.TaskView); ok {
+				if task, ok := item.(viewmodels.TaskItem); ok {
 					logger.Logger.Printf("task selected: '%v'", task.TaskID)
 					return constants.TaskSelectedMsg{TaskID: task.TaskID}
 				}
-				logger.Logger.Println("Failed to parse Item to TaskView")
+				logger.Logger.Println("Failed to parse Item to TaskItem")
 				return nil
 			}
 		}

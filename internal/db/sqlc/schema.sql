@@ -11,9 +11,16 @@ CREATE TABLE IF NOT EXISTS tasks (
   description TEXT NOT NULL,
   project_id INTEGER NOT NULL,
   sort INTEGER NOT NULL,
-  dependencies_json TEXT NOT NULL,
   is_completed INTEGER NOT NULL,
   is_in_progress INTEGER NOT NULL,
   notes TEXT NULL,
-  FOREIGN KEY(project_id) REFERENCES projects(project_id)
+  FOREIGN KEY(project_id) REFERENCES projects(project_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS dependencies (
+  task_id INTEGER NOT NULL,
+  depends_on INTEGER NOT NULL,
+  PRIMARY KEY (task_id, depends_on),
+  FOREIGN KEY(task_id) REFERENCES tasks(task_id) ON DELETE CASCADE,
+  FOREIGN KEY(depends_on) REFERENCES tasks(task_id) ON DELETE CASCADE
 );

@@ -1,94 +1,79 @@
 package viewmodels
 
 import (
-	"encoding/json"
 	"fmt"
 
+	"github.com/frozenkro/mcpsequencer/internal/models"
 	"github.com/frozenkro/mcpsequencer/internal/projectsdb"
 )
 
-type ProjectView struct {
+type ProjectItem struct {
 	ProjectID int
 	Name      string
 }
 
-func NewProjectView(p projectsdb.Project) ProjectView {
-	return ProjectView{
+func NewProjectItem(p projectsdb.Project) ProjectItem {
+	return ProjectItem{
 		ProjectID: int(p.ProjectID),
 		Name:      p.Name,
 	}
 }
 
-func (p ProjectView) FilterValue() string {
+func (p ProjectItem) FilterValue() string {
 	return p.Name
 }
 
 // Title returns the title for display in lists
-func (p ProjectView) Title() string {
+func (p ProjectItem) Title() string {
 	return p.Name
 }
 
 // Description returns an empty string - could be customized in the future
-func (p ProjectView) Description() string {
+func (p ProjectItem) Description() string {
 	return "Project ID: " + fmt.Sprintf("%d", p.ProjectID)
 }
 
-type TaskView struct {
-	TaskID       int
-	Name         string
-	DescProp     string
-	ProjectID    int
-	Sort         int
-	IsCompleted  bool
-	IsInProgress bool
-	Deps         []int
-	Notes        string
+type TaskItem struct {
+	TaskID    int
+	Name      string
+	DescProp  string
+	ProjectID int
+	Sort      int
+	Status    models.Status
+	Deps      []int
+	Notes     string
 }
 
-func (t TaskView) FilterValue() string {
+func (t TaskItem) FilterValue() string {
 	return t.Title()
 }
 
 // Title returns the title for display in lists
-func (t TaskView) Title() string {
+func (t TaskItem) Title() string {
 	return t.Name
 }
 
-func (t TaskView) Description() string {
-	return t.Status()
+func (t TaskItem) Description() string {
+	return string(t.Status)
 }
 
-func (t TaskView) Status() string {
-	status := "Not Started"
-	if t.IsCompleted {
-		status = "Completed"
-	} else if t.IsInProgress {
-		status = "In Progress"
-	}
-	return status
-}
-
-func NewTaskView(t projectsdb.Task) (TaskView, error) {
-	isCompleted := false
-	if t.IsCompleted == 1 {
-		isCompleted = true
-	}
-
-	isInProgress := false
-	if t.IsInProgress == 1 {
-		isInProgress = true
-	}
+func NewTaskItem(t models.Task) (TaskItem, error) {
 
 	deps := []int{}
-	err := json.Unmarshal([]byte(t.DependenciesJson), &deps)
+	for _, d := range t.Dependencies {
+		if d.Discriminator != models.TaskId {
+			return TaskItem{}, fmt.Errorf("Received Dependency with SortIds, expecting TaskIds")
+		}
+		deps = append(deps, d.DependsOn)
+	}
 
-	return TaskView{
-		TaskID:       int(t.TaskID),
-		Name:         t.Name,
-		DescProp:     t.Description,
-		ProjectID:    int(t.ProjectID),
-		Sort:         int(t.Sort),
-		IsCompleted:  isCompleted,
-		IsInProgress: isInProgress,
-	}, err
+	return TaskItem{
+		TaskID:    int(t.TaskId),
+		Name:      t.Name,
+		DescProp:  t.Description,
+		ProjectID: int(t.ProjectId),
+		Sort:      int(t.Sort),
+		Status:    t.Status,
+		Deps:      deps,
+	}, nil
 }

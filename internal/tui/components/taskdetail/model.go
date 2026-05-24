@@ -10,6 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/frozenkro/mcpsequencer/internal/models"
 	"github.com/frozenkro/mcpsequencer/internal/services"
 	"github.com/frozenkro/mcpsequencer/internal/tui/logger"
 	"github.com/frozenkro/mcpsequencer/internal/tui/viewmodels"
@@ -23,7 +24,7 @@ const (
 )
 
 type Model struct {
-	Task         *viewmodels.TaskView
+	Task         *viewmodels.TaskItem
 	Mode         Mode
 	Width        int
 	Height       int
@@ -54,7 +55,7 @@ func NewModel(svc services.Services, width, height int) Model {
 	}
 }
 
-func (m *Model) HandleTaskSelected(task *viewmodels.TaskView) {
+func (m *Model) HandleTaskSelected(task *viewmodels.TaskItem) {
 	m.Task = task
 	if task != nil {
 		m.nameInput.SetValue(task.Name)
@@ -137,10 +138,12 @@ func (m Model) renderViewMode() string {
 		Bold(true).
 		Foreground(lipgloss.Color("2"))
 
-	if m.Task.IsCompleted {
+	if m.Task.Status == models.Completed {
 		statusStyle = statusStyle.Foreground(lipgloss.Color("2")) // Green
-	} else if m.Task.IsInProgress {
+	} else if m.Task.Status == models.InProgress {
 		statusStyle = statusStyle.Foreground(lipgloss.Color("3")) // Yellow
+	} else if m.Task.Status == models.Failed {
+		statusStyle = statusStyle.Foreground(lipgloss.Color("1")) // Red
 	} else {
 		statusStyle = statusStyle.Foreground(lipgloss.Color("8")) // Gray
 	}
@@ -153,7 +156,7 @@ func (m Model) renderViewMode() string {
 	content.WriteString("\n\n")
 
 	content.WriteString(labelStyle.Render("Status: "))
-	content.WriteString(statusStyle.Render(m.Task.Status()))
+	content.WriteString(statusStyle.Render(string(m.Task.Status)))
 	content.WriteString("\n\n")
 
 	content.WriteString(labelStyle.Render("Description:"))

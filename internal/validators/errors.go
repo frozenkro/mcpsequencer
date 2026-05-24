@@ -15,7 +15,7 @@ func (e DepsUnmarshalError) Error() string {
 }
 
 type DupeSortIdError struct {
-	SortID int
+	SortID int64
 }
 
 func (e DupeSortIdError) Error() string {
