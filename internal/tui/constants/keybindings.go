@@ -16,6 +16,7 @@ const (
 	KeyRight2  = "l"
 	KeySelect1 = "enter"
 	KeySelect2 = " "
+	KeyToggleStatus = "s"
 )
 
 // KeyMap returns true if the key pressed matches any of the specified keys

@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/frozenkro/mcpsequencer/internal/models"
 	"github.com/frozenkro/mcpsequencer/internal/services"
 	"github.com/frozenkro/mcpsequencer/internal/tui/constants"
 	"github.com/frozenkro/mcpsequencer/internal/tui/logger"
@@ -94,9 +95,55 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return nil
 			}
 		}
+
+		if constants.KeyMatch(msg, constants.KeyToggleStatus) {
+			return m.handleToggleStatus()
+		}
 	}
 
 	return m, nil
+}
+
+func (m Model) handleToggleStatus() (tea.Model, tea.Cmd) {
+	if len(m.List.Items()) == 0 {
+		return m, nil
+	}
+	idx := m.List.Index()
+	if idx < 0 || idx >= len(m.List.Items()) {
+		return m, nil
+	}
+
+	item := m.List.Items()[idx]
+	task, ok := item.(viewmodels.TaskItem)
+	if !ok {
+		return m, nil
+	}
+
+	var newState services.TaskState
+	switch task.Status {
+	case models.NotStarted, models.Failed:
+		newState = services.StateInProgress
+		task.Status = models.InProgress
+	case models.InProgress:
+		newState = services.StateComplete
+		task.Status = models.Completed
+	case models.Completed:
+		newState = services.StatePending
+		task.Status = models.NotStarted
+	}
+
+	if err := m.svc.UpdateTaskState(context.Background(), int64(task.TaskID), newState); err != nil {
+		logger.Logger.Printf("Error updating task state for TaskID %d: %v", task.TaskID, err)
+		return m, nil
+	}
+
+	items := m.List.Items()
+	items[idx] = task
+	m.List.SetItems(items)
+
+	return m, func() tea.Msg {
+		return constants.TaskSelectedMsg{TaskID: task.TaskID}
+	}
 }
 
 func (m Model) ResizeList(msg tea.WindowSizeMsg, width, height int) tea.Cmd {
