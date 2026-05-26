@@ -1,6 +1,9 @@
 mcpsequencer
 mcpsequencer-mcp
 mcpsequencer-tui
+sqncr
+mcp
+tui
 *.db
 main
 *.log

@@ -1,6 +1,6 @@
 package models
 
-import "github.com/frozenkro/mcpsequencer/internal/projectsdb"
+import "github.com/frozenkro/sqncr/internal/projectsdb"
 
 // Domain model for Task
 // Contains structured list of dependencies

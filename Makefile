@@ -1,7 +1,7 @@
 BIN=build
 LOG=log
-MCP_BIN=mcpsequencer-mcp
-TUI_BIN=mcpsequencer-tui
+MCP_BIN=sqncr-mcp
+TUI_BIN=sqncr-tui
 
 build: build.mcp build.tui
 

@@ -1,7 +1,7 @@
 package validators
 
 import (
-	"github.com/frozenkro/mcpsequencer/internal/models"
+	"github.com/frozenkro/sqncr/internal/models"
 )
 
 type DependencyValidator struct {

@@ -15,7 +15,7 @@ const (
 	Prod
 )
 
-const AppName = "mcpsequencer"
+const AppName = "sqncr"
 
 var (
 	Environment Environments

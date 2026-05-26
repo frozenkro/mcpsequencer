@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/frozenkro/mcpsequencer/internal/db"
-	"github.com/frozenkro/mcpsequencer/internal/models"
-	"github.com/frozenkro/mcpsequencer/internal/projectsdb"
-	"github.com/frozenkro/mcpsequencer/internal/transformers"
-	"github.com/frozenkro/mcpsequencer/internal/validators"
+	"github.com/frozenkro/sqncr/internal/db"
+	"github.com/frozenkro/sqncr/internal/models"
+	"github.com/frozenkro/sqncr/internal/projectsdb"
+	"github.com/frozenkro/sqncr/internal/transformers"
+	"github.com/frozenkro/sqncr/internal/validators"
 )
 
 const TaskSortLast int64 = -1

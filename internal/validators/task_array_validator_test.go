@@ -3,8 +3,8 @@ package validators_test
 import (
 	"testing"
 
-	"github.com/frozenkro/mcpsequencer/internal/projectsdb"
-	"github.com/frozenkro/mcpsequencer/internal/validators"
+	"github.com/frozenkro/sqncr/internal/projectsdb"
+	"github.com/frozenkro/sqncr/internal/validators"
 	"github.com/stretchr/testify/assert"
 )
 

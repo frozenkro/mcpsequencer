@@ -1,8 +1,8 @@
 package transformers
 
 import (
-	"github.com/frozenkro/mcpsequencer/internal/models"
-	"github.com/frozenkro/mcpsequencer/internal/projectsdb"
+	"github.com/frozenkro/sqncr/internal/models"
+	"github.com/frozenkro/sqncr/internal/projectsdb"
 )
 
 type DependencyTransformer struct{}

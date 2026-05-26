@@ -1,7 +1,7 @@
 package validators
 
 import (
-	"github.com/frozenkro/mcpsequencer/internal/projectsdb"
+	"github.com/frozenkro/sqncr/internal/projectsdb"
 )
 
 type TaskArrayValidator struct{}

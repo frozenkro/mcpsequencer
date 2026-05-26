@@ -8,11 +8,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/frozenkro/mcpsequencer/internal/db"
-	"github.com/frozenkro/mcpsequencer/internal/globals"
-	"github.com/frozenkro/mcpsequencer/internal/models"
-	"github.com/frozenkro/mcpsequencer/internal/projectsdb"
-	"github.com/frozenkro/mcpsequencer/internal/services"
+	"github.com/frozenkro/sqncr/internal/db"
+	"github.com/frozenkro/sqncr/internal/globals"
+	"github.com/frozenkro/sqncr/internal/models"
+	"github.com/frozenkro/sqncr/internal/projectsdb"
+	"github.com/frozenkro/sqncr/internal/services"
 	"github.com/stretchr/testify/assert"
 )
 

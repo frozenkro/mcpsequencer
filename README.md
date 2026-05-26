@@ -36,8 +36,8 @@ A terminal-based interface for direct developer interaction:
 ### Build from Source
 ```bash
 # Clone the repository
-git clone https://github.com/frozenkro/mcpsequencer.git
-cd mcpsequencer
+git clone https://github.com/frozenkro/sqncr.git
+cd sqncr
 
 # Build both binaries
 make build
@@ -57,7 +57,7 @@ make build.tui  # TUI application
 go run cmd/mcp/main.go
 
 # Or use built binary
-./build/mcpsequencer-mcp
+./build/sqncr-mcp
 ```
 
 #### HTTP Mode
@@ -78,7 +78,7 @@ make run.mcp
 go run cmd/tui/main.go
 
 # Or use built binary
-./build/mcpsequencer-tui
+./build/sqncr-tui
 
 # Using Makefile
 make run.tui
@@ -121,7 +121,7 @@ make debug.mcp
 
 ### Project Structure
 ```
-mcpsequencer/
+sqncr/
 ├── cmd/
 │   ├── mcp/           # MCP server entry point
 │   └── tui/           # TUI application entry point
@@ -149,7 +149,7 @@ Database files are created automatically in the working directory.
 
 The MCP server is designed to work with LLM clients that support the Model Context Protocol. Configure your LLM client to connect to the MCP server:
 
-**Stdio Mode**: Point your client to the `mcpsequencer-mcp` binary
+**Stdio Mode**: Point your client to the `sqncr-mcp` binary
 **HTTP Mode**: Connect to `http://localhost:8080` (or your configured port)
 
 ## Contributing

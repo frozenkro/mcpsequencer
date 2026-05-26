@@ -8,10 +8,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/frozenkro/mcpsequencer/internal/services"
-	"github.com/frozenkro/mcpsequencer/internal/tui/constants"
-	"github.com/frozenkro/mcpsequencer/internal/tui/logger"
-	"github.com/frozenkro/mcpsequencer/internal/tui/viewmodels"
+	"github.com/frozenkro/sqncr/internal/services"
+	"github.com/frozenkro/sqncr/internal/tui/constants"
+	"github.com/frozenkro/sqncr/internal/tui/logger"
+	"github.com/frozenkro/sqncr/internal/tui/viewmodels"
 )
 
 type Model struct {

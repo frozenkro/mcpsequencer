@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/frozenkro/mcpsequencer/internal/globals"
-	"github.com/frozenkro/mcpsequencer/internal/models"
-	"github.com/frozenkro/mcpsequencer/internal/services"
+	"github.com/frozenkro/sqncr/internal/globals"
+	"github.com/frozenkro/sqncr/internal/models"
+	"github.com/frozenkro/sqncr/internal/services"
 	"github.com/mark3labs/mcp-go/mcp"
 )
 

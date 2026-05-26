@@ -8,8 +8,8 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/frozenkro/mcpsequencer/internal/models"
-	"github.com/frozenkro/mcpsequencer/internal/tui/viewmodels"
+	"github.com/frozenkro/sqncr/internal/models"
+	"github.com/frozenkro/sqncr/internal/tui/viewmodels"
 )
 
 type TaskItemDelegate struct{}

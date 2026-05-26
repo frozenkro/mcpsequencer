@@ -6,9 +6,9 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/frozenkro/mcpsequencer/internal/db"
-	"github.com/frozenkro/mcpsequencer/internal/globals"
-	"github.com/frozenkro/mcpsequencer/internal/tui"
+	"github.com/frozenkro/sqncr/internal/db"
+	"github.com/frozenkro/sqncr/internal/globals"
+	"github.com/frozenkro/sqncr/internal/tui"
 )
 
 func main() {
@@ -36,7 +36,7 @@ func main() {
 }
 
 func setupLogger() (*log.Logger, func() error, error) {
-	file, err := os.OpenFile("mcpsequencertui.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	file, err := os.OpenFile("sqncrtui.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		return nil, nil, err
 	}

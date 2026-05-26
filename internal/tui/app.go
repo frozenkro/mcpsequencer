@@ -4,11 +4,11 @@ import (
 	"context"
 	"log"
 
-	"github.com/frozenkro/mcpsequencer/internal/services"
-	"github.com/frozenkro/mcpsequencer/internal/tui/components/projects"
-	"github.com/frozenkro/mcpsequencer/internal/tui/components/taskdetail"
-	"github.com/frozenkro/mcpsequencer/internal/tui/components/tasks"
-	tuilog "github.com/frozenkro/mcpsequencer/internal/tui/logger"
+	"github.com/frozenkro/sqncr/internal/services"
+	"github.com/frozenkro/sqncr/internal/tui/components/projects"
+	"github.com/frozenkro/sqncr/internal/tui/components/taskdetail"
+	"github.com/frozenkro/sqncr/internal/tui/components/tasks"
+	tuilog "github.com/frozenkro/sqncr/internal/tui/logger"
 )
 
 func InitialModel(logger *log.Logger) (Model, error) {

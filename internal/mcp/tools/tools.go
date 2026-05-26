@@ -3,7 +3,7 @@ package tools
 import (
 	"fmt"
 
-	"github.com/frozenkro/mcpsequencer/internal/globals"
+	"github.com/frozenkro/sqncr/internal/globals"
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
